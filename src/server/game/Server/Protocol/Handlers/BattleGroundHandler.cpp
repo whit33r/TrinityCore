@@ -25,7 +25,7 @@
 
 #include "ArenaTeam.h"
 #include "BattlegroundMgr.h"
-#include "Battleground.h"
+#include "BattlegroundMap.h"
 #include "Chat.h"
 #include "Language.h"
 #include "Log.h"
@@ -293,16 +293,16 @@ void WorldSession::HandlePVPLogDataOpcode(WorldPacket & /*recv_data*/)
 {
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Recvd MSG_PVP_LOG_DATA Message");
 
-    Battleground* bg = _player->GetBattleground();
+    BattlegroundMap* bg = dynamic_cast<BattlegroundMap*>(_player->GetMap());
     if (!bg)
         return;
 
     // Prevent players from sending BuildPvpLogDataPacket in an arena except for when sent in BattleGround::EndBattleGround.
-    if (bg->isArena())
+    if (bg->IsBattleArena())
         return;
 
     WorldPacket data;
-    sBattlegroundMgr->BuildPvpLogDataPacket(&data, bg);
+    bg->BuildPVPLogDataPacket(data);
     SendPacket(&data);
 
     sLog->outDebug(LOG_FILTER_NETWORKIO, "WORLD: Sent MSG_PVP_LOG_DATA Message");

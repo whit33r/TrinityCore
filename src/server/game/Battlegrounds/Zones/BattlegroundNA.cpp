@@ -16,7 +16,7 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Battleground.h"
+#include "BattlegroundMap.h"
 #include "BattlegroundNA.h"
 #include "Language.h"
 #include "Object.h"

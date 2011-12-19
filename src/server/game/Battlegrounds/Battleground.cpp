@@ -23,7 +23,7 @@
 #include "WorldPacket.h"
 
 #include "ArenaTeam.h"
-#include "Battleground.h"
+#include "BattlegroundMap.h"
 #include "BattlegroundMgr.h"
 #include "Creature.h"
 #include "Formulas.h"

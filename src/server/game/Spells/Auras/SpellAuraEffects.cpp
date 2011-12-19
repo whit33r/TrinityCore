@@ -28,7 +28,7 @@
 #include "Util.h"
 #include "Spell.h"
 #include "SpellAuraEffects.h"
-#include "Battleground.h"
+#include "BattlegroundMap.h"
 #include "OutdoorPvPMgr.h"
 #include "Formulas.h"
 #include "GridNotifiers.h"
@@ -4804,7 +4804,7 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                     if (Aura* newAura = target->AddAura(71564, target))
                         newAura->SetStackAmount(newAura->GetSpellInfo()->StackAmount);
                         break;
-                case 59628: // Tricks of the Trade  
+                case 59628: // Tricks of the Trade
                     if (!caster->GetMisdirectionTarget())
                         break;
                     target->SetReducedThreatPercent(100,caster->GetMisdirectionTarget()->GetGUID());
@@ -4968,7 +4968,7 @@ void AuraEffect::HandleAuraDummy(AuraApplication const* aurApp, uint8 mode, bool
                                 target->SetReducedThreatPercent(0,0);
                             else
                                 target->SetReducedThreatPercent(0,caster->GetMisdirectionTarget()->GetGUID());
-                            break;       
+                            break;
                     }
                 default:
                     break;

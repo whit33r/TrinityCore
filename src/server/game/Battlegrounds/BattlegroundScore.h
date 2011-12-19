@@ -27,7 +27,15 @@ class BattlegroundScore
             BonusHonor(0), DamageDone(0), HealingDone(0) {};
         virtual ~BattlegroundScore() {};
 
-        virtual void AppendToPacket(WorldPacket* data) {};
+        virtual void AppendToPacket(WorldPacket* data)
+        {
+            *data << KillingBlows;
+            *data << HonorableKills;
+            *data << Deaths;
+            *data << BonusHonor;
+            *data << DamageDone;
+            *data << HealingDone;
+        }
 
         template <class T> uint32 GetMemberCount() { return sizeof(T) / sizeof(uint32); }
 
