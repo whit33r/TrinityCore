@@ -18,7 +18,7 @@
 #ifndef __BATTLEGROUNDBE_H
 #define __BATTLEGROUNDBE_H
 
-class Battleground;
+class ArenaMap;
 
 enum BattlegroundBEObjectTypes
 {

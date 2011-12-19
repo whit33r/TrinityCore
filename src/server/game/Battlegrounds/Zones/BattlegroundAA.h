@@ -18,7 +18,7 @@
 #ifndef __BATTLEGROUNDAA_H
 #define __BATTLEGROUNDAA_H
 
-class BattlegroundMap;
+class ArenaMap;
 
 class BattlegroundAAScore : public BattlegroundScore
 {

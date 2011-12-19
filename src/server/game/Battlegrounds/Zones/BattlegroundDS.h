@@ -19,7 +19,7 @@
 #ifndef __BATTLEGROUNDDS_H
 #define __BATTLEGROUNDDS_H
 
-class Battleground;
+class ArenaMap;
 
 enum BattlegroundDSObjectTypes
 {
