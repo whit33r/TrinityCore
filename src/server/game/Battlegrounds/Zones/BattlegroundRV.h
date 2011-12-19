@@ -18,7 +18,7 @@
 #ifndef __BATTLEGROUNDRV_H
 #define __BATTLEGROUNDRV_H
 
-class Battleground;
+class ArenaMap;
 
 enum BattlegroundRVObjectTypes
 {
@@ -98,7 +98,7 @@ class BattlegroundRVScore : public BattlegroundScore
         virtual ~BattlegroundRVScore() {};
 };
 
-class BattlegroundRV : public Battleground
+class BattlegroundRV : public ArenaMap
 {
     public:
         BattlegroundRV();

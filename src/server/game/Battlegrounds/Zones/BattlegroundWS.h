@@ -19,6 +19,8 @@
 #ifndef __BATTLEGROUNDWS_H
 #define __BATTLEGROUNDWS_H
 
+class BattlegroundMap;
+
 #include "Battleground.h"
 
 enum BG_WS_TimerOrScore
@@ -155,7 +157,7 @@ class BattlegroundWGScore : public BattlegroundScore
         uint32 FlagReturns;
 };
 
-class BattlegroundWS : public Battleground
+class BattlegroundWS : public BattlegroundMap
 {
     public:
         /* Construction */

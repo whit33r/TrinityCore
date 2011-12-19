@@ -18,7 +18,7 @@
 #ifndef __BATTLEGROUNDAB_H
 #define __BATTLEGROUNDAB_H
 
-class Battleground;
+class BattlegroundMap;
 
 enum BG_AB_WorldStates
 {
@@ -239,11 +239,13 @@ class BattlegroundABScore : public BattlegroundScore
         uint32 BasesDefended;
 };
 
-class BattlegroundAB : public Battleground
+class BattlegroundAB : public BattlegroundMap
 {
     public:
         BattlegroundAB();
         ~BattlegroundAB();
+
+        void InitializeTextIds();    // Initializes text IDs that are used in the battleground at any possible phase.
 
         void AddPlayer(Player* player);
         virtual void StartingEventCloseDoors();

@@ -79,7 +79,7 @@ class BattlegroundMgr
         Battleground* GetBattlegroundThroughClientInstance(uint32 instanceId, BattlegroundTypeId bgTypeId);
         Battleground* GetBattleground(uint32 InstanceID, BattlegroundTypeId bgTypeId); //there must be uint32 because MAX_BATTLEGROUND_TYPE_ID means unknown
 
-        Battleground* GetBattlegroundTemplate(BattlegroundTypeId bgTypeId);
+        Battleground* GetBattleground(BattlegroundTypeId bgTypeId);
         Battleground* CreateNewBattleground(BattlegroundTypeId bgTypeId, PvPDifficultyEntry const* bracketEntry, uint8 arenaType, bool isRated);
 
         uint32 CreateBattleground(CreateBattlegroundData& data);
@@ -149,6 +149,15 @@ class BattlegroundMgr
     // REFACTOR from here
     protected:
         typedef std::map<BattlegroundTypeId, BattlegroundTemplate> BattlegroundTemplateMap;
+
+        BattlegroundTemplate const* GetBattlegroundTemplate(BattlegroundTypeId id)
+        {
+            BattlegroundTemplateMap::const_iterator itr = _battlegroundTemplates.find(id);
+            if (itr != _battlegroundTemplates.end())
+                return &itr->second;
+
+            return NULL;
+        }
 
     private:
         BattlegroundTemplateMap _battlegroundTemplates;

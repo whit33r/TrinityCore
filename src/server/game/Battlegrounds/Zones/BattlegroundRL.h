@@ -18,7 +18,7 @@
 #ifndef __BATTLEGROUNDRL_H
 #define __BATTLEGROUNDRL_H
 
-class Battleground;
+class ArenaMap;
 
 enum BattlegroundRLObjectTypes
 {
@@ -45,7 +45,7 @@ class BattlegroundRLScore : public BattlegroundScore
         //TODO fix me
 };
 
-class BattlegroundRL : public Battleground
+class BattlegroundRL : public ArenaMap
 {
     public:
         BattlegroundRL();

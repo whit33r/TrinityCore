@@ -19,7 +19,7 @@
 #ifndef __BATTLEGROUNDIC_H
 #define __BATTLEGROUNDIC_H
 
-class Battleground;
+class BattlegroundMap;
 
 const uint32 BG_IC_Factions[2] =
 {
@@ -856,11 +856,13 @@ class BattlegroundICScore : public BattlegroundScore
         uint32 BasesDefended;
 };
 
-class BattlegroundIC : public Battleground
+class BattlegroundIC : public BattlegroundMap
 {
     public:
         BattlegroundIC();
         ~BattlegroundIC();
+
+        void InitializeTextIds();    // Initializes text IDs that are used in the battleground at any possible phase.
 
         /* inherited from BattlegroundClass */
         virtual void AddPlayer(Player* player);

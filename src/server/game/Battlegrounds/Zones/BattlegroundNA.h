@@ -18,7 +18,7 @@
 #ifndef __BATTLEGROUNDNA_H
 #define __BATTLEGROUNDNA_H
 
-class Battleground;
+class ArenaMap;
 
 enum BattlegroundNAObjectTypes
 {
@@ -49,7 +49,7 @@ class BattlegroundNAScore : public BattlegroundScore
         //TODO fix me
 };
 
-class BattlegroundNA : public Battleground
+class BattlegroundNA : public ArenaMap
 {
     public:
         BattlegroundNA();

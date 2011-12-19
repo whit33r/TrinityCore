@@ -19,7 +19,7 @@
 #ifndef __BATTLEGROUNDSA_H
 #define __BATTLEGROUNDSA_H
 
-class Battleground;
+class BattlegroundMap;
 
 class BattlegroundSAScore : public BattlegroundScore
 {
@@ -408,11 +408,13 @@ struct BG_SA_RoundScore
 };
 
 /// Class for manage Strand of Ancient battleground
-class BattlegroundSA : public Battleground
+class BattlegroundSA : public BattlegroundMap
 {
     public:
         BattlegroundSA();
         ~BattlegroundSA();
+
+        void InitializeTextIds();    // Initializes text IDs that are used in the battleground at any possible phase.
 
         /**
          * \brief Called every time for update battle data

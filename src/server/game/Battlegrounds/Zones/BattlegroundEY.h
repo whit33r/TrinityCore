@@ -21,7 +21,7 @@
 
 #include "Language.h"
 
-class Battleground;
+class BattlegroundMap;
 
 enum BG_EY_Misc
 {
@@ -329,11 +329,13 @@ class BattlegroundEYScore : public BattlegroundScore
         uint32 FlagCaptures;
 };
 
-class BattlegroundEY : public Battleground
+class BattlegroundEY : public BattlegroundMap
 {
     public:
         BattlegroundEY();
         ~BattlegroundEY();
+
+        void InitializeTextIds();    // Initializes text IDs that are used in the battleground at any possible phase.
 
         /* inherited from BattlegroundClass */
         virtual void AddPlayer(Player* player);

@@ -19,7 +19,7 @@
 #ifndef __BATTLEGROUNDAV_H
 #define __BATTLEGROUNDAV_H
 
-class Battleground;
+class BattlegroundMap;
 
 #define LANG_BG_AV_A_CAPTAIN_BUFF       "Begone. Uncouth scum! The Alliance shall prevail in Alterac Valley!"
 #define LANG_BG_AV_H_CAPTAIN_BUFF       "Now is the time to attack! For the Horde!"
@@ -1532,11 +1532,13 @@ class BattlegroundAVScore : public BattlegroundScore
         uint32 SecondaryObjectives;
 };
 
-class BattlegroundAV : public Battleground
+class BattlegroundAV : public BattlegroundMap
 {
     public:
         BattlegroundAV();
         ~BattlegroundAV();
+
+        void InitializeTextIds();       // Initializes text IDs that are used in the battleground at any possible phase.
 
         /* inherited from BattlegroundClass */
         virtual void AddPlayer(Player* player);
