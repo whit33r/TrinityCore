@@ -1702,7 +1702,7 @@ void World::SetInitialWorldSettings()
 
     ///- Initialize Battlegrounds
     sLog->outString("Starting Battleground System");
-    sBattlegroundMgr->CreateInitialBattlegrounds();
+    sBattlegroundMgr->LoadBattlegroundTemplates();
     sBattlegroundMgr->InitAutomaticArenaPointDistribution();
 
     ///- Initialize outdoor pvp
