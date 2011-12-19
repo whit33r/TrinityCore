@@ -34,7 +34,7 @@ typedef UNORDERED_MAP<uint32, BattlegroundTypeId> BattleMastersMap;
 
 struct CreateBattlegroundData
 {
-    BattlegroundTypeId bgTypeId;
+    BattlegroundTypeId BgTypeId;
     bool IsArena;
     uint32 MinPlayersPerTeam;
     uint32 MaxPlayersPerTeam;
@@ -88,7 +88,7 @@ class BattlegroundMgr
         void RemoveBattleground(uint32 instanceID, BattlegroundTypeId bgTypeId) { m_Battlegrounds[bgTypeId].erase(instanceID); }
         uint32 CreateClientVisibleInstanceId(BattlegroundTypeId bgTypeId, BattlegroundBracketId bracket_id);
 
-        void CreateInitialBattlegrounds();
+        void LoadBattlegroundTemplates();
         void DeleteAllBattlegrounds();
 
         void SendToBattleground(Player* player, uint32 InstanceID, BattlegroundTypeId bgTypeId);
@@ -145,6 +145,13 @@ class BattlegroundMgr
         uint32 m_AutoDistributionTimeChecker;
         bool   m_ArenaTesting;
         bool   m_Testing;
+
+    // REFACTOR from here
+    protected:
+        typedef std::map<BattlegroundTypeId, BattlegroundTemplate> BattlegroundTemplateMap;
+
+    private:
+        BattlegroundTemplateMap _battlegroundTemplates;
 };
 
 #define sBattlegroundMgr ACE_Singleton<BattlegroundMgr, ACE_Null_Mutex>::instance()
