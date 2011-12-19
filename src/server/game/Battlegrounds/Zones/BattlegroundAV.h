@@ -19,7 +19,11 @@
 #ifndef __BATTLEGROUNDAV_H
 #define __BATTLEGROUNDAV_H
 
+#include "BattlegroundMap.h"
+#include "BattlegroundScore.h"
+
 class BattlegroundMap;
+class BattlegroundAV;
 
 #define LANG_BG_AV_A_CAPTAIN_BUFF       "Begone. Uncouth scum! The Alliance shall prevail in Alterac Valley!"
 #define LANG_BG_AV_H_CAPTAIN_BUFF       "Now is the time to attack! For the Horde!"
@@ -1520,16 +1524,26 @@ inline BG_AV_Nodes &operator++(BG_AV_Nodes &i){ return i = BG_AV_Nodes(i + 1); }
 
 class BattlegroundAVScore : public BattlegroundScore
 {
-    public:
-        BattlegroundAVScore() : GraveyardsAssaulted(0), GraveyardsDefended(0), TowersAssaulted(0), TowersDefended(0), MinesCaptured(0), LeadersKilled(0), SecondaryObjectives(0) {};
+    friend class BattlegroundAV;
+    protected:
+        BattlegroundAVScore() : BattlegroundScore(), GraveyardsAssaulted(0), GraveyardsDefended(0), TowersAssaulted(0), TowersDefended(0), MinesCaptured(0) {};
         virtual ~BattlegroundAVScore() {};
+
+        void AppendToPacket(WorldPacket* data)
+        {
+            *data << GetMemberCount<BattlegroundAVScore>();
+            *data << GraveyardsAssaulted;
+            *data << GraveyardsDefended;
+            *data << TowersAssaulted;
+            *data << TowersDefended;
+            *data << MinesCaptured;
+        }
+
         uint32 GraveyardsAssaulted;
         uint32 GraveyardsDefended;
         uint32 TowersAssaulted;
         uint32 TowersDefended;
         uint32 MinesCaptured;
-        uint32 LeadersKilled;
-        uint32 SecondaryObjectives;
 };
 
 class BattlegroundAV : public BattlegroundMap
@@ -1541,7 +1555,7 @@ class BattlegroundAV : public BattlegroundMap
         void InitializeTextIds();       // Initializes text IDs that are used in the battleground at any possible phase.
 
         /* inherited from BattlegroundClass */
-        virtual void AddPlayer(Player* player);
+        virtual void OnPlayerJoin(Player* player);
         virtual void StartingEventCloseDoors();
         virtual void StartingEventOpenDoors();
 

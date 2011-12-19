@@ -80,7 +80,7 @@ void BattlegroundDS::StartingEventOpenDoors()
 
 void BattlegroundDS::AddPlayer(Player* player)
 {
-    Battleground::AddPlayer(player);
+    Battleground::OnPlayerJoin(player);
     //create score and add it to map, default values are set in constructor
     BattlegroundDSScore* sc = new BattlegroundDSScore;
 

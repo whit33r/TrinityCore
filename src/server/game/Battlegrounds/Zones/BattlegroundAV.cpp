@@ -19,8 +19,10 @@
 #include "ObjectMgr.h"
 #include "WorldPacket.h"
 
-#include "Battleground.h"
+#include "BattlegroundMap.h"
 #include "BattlegroundAV.h"
+#include "BattlegroundScore.h"
+
 #include "Miscellaneous/Formulas.h"
 #include "GameObject.h"
 #include "Miscellaneous/Language.h"
@@ -74,7 +76,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
         RewardReputationToTeam(729, BG_AV_REP_BOSS, HORDE);
         RewardHonorToTeam(GetBonusHonor(BG_AV_KILL_BOSS), HORDE);
         EndBattleground(HORDE);
-        DelCreature(AV_CPLACE_TRIGGER17);
+        DeleteCreature(AV_CPLACE_TRIGGER17);
     }
     else if (entry == BG_AV_CreatureInfo[AV_NPC_H_BOSS][0])
     {
@@ -101,7 +103,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
         Creature* creature = GetBGCreature(AV_CPLACE_HERALD);
         if (creature)
             YellToAll(creature, GetTrinityString(LANG_BG_AV_A_CAPTAIN_DEAD), LANG_UNIVERSAL);
-        DelCreature(AV_CPLACE_TRIGGER16);
+        DeleteCreature(AV_CPLACE_TRIGGER16);
     }
     else if (entry == BG_AV_CreatureInfo[AV_NPC_H_CAPTAIN][0])
     {
@@ -120,7 +122,7 @@ void BattlegroundAV::HandleKillUnit(Creature* unit, Player* killer)
         Creature* creature = GetBGCreature(AV_CPLACE_HERALD);
         if (creature)
             YellToAll(creature, GetTrinityString(LANG_BG_AV_H_CAPTAIN_DEAD), LANG_UNIVERSAL);
-        DelCreature(AV_CPLACE_TRIGGER18);
+        DeleteCreature(AV_CPLACE_TRIGGER18);
     }
     else if (entry == BG_AV_CreatureInfo[AV_NPC_N_MINE_N_4][0] || entry == BG_AV_CreatureInfo[AV_NPC_N_MINE_A_4][0] || entry == BG_AV_CreatureInfo[AV_NPC_N_MINE_H_4][0])
         ChangeMineOwner(AV_NORTH_MINE, killer->GetTeam());
@@ -417,12 +419,13 @@ void BattlegroundAV::StartingEventOpenDoors()
     DoorOpen(BG_AV_OBJECT_DOOR_A);
 }
 
-void BattlegroundAV::AddPlayer(Player* player)
+void BattlegroundAV::OnPlayerJoin(Player* player)
 {
-    Battleground::AddPlayer(player);
+    Battleground::OnPlayerJoin(player);
     //create score and add it to map, default values are set in constructor
     BattlegroundAVScore* sc = new BattlegroundAVScore;
-    m_PlayerScores[player->GetGUID()] = sc;
+    ScoreMap[plr->GetGUIDLow()] = sc;
+
     if (m_MaxLevel == 0)
         m_MaxLevel=(player->getLevel()%10 == 0)? player->getLevel() : (player->getLevel()-(player->getLevel()%10))+10; //TODO: just look at the code \^_^/ --but queue-info should provide this information..
 
@@ -523,9 +526,8 @@ void BattlegroundAV::HandleAreaTrigger(Player* Source, uint32 Trigger)
 
 void BattlegroundAV::UpdatePlayerScore(Player* Source, uint32 type, uint32 value, bool doAddHonor)
 {
-
-    BattlegroundScoreMap::iterator itr = m_PlayerScores.find(Source->GetGUID());
-    if (itr == m_PlayerScores.end())                         // player not found...
+    BattlegroundScoreMap::iterator itr = ScoreMap.find(Source->GetGUIDLow());
+    if (itr == ScoreMap.end())                         // player not found...
         return;
 
     switch (type)
@@ -549,14 +551,8 @@ void BattlegroundAV::UpdatePlayerScore(Player* Source, uint32 type, uint32 value
         case SCORE_MINES_CAPTURED:
             ((BattlegroundAVScore*)itr->second)->MinesCaptured += value;
             break;
-        case SCORE_LEADERS_KILLED:
-            ((BattlegroundAVScore*)itr->second)->LeadersKilled += value;
-            break;
-        case SCORE_SECONDARY_OBJECTIVES:
-            ((BattlegroundAVScore*)itr->second)->SecondaryObjectives += value;
-            break;
         default:
-            Battleground::UpdatePlayerScore(Source, type, value, doAddHonor);
+            BattlegroundMap::UpdatePlayerScore(Source, type, value, doAddHonor);
             break;
     }
 }
@@ -578,7 +574,7 @@ void BattlegroundAV::EventPlayerDestroyedPoint(BG_AV_Nodes node)
         uint8 tmp = node-BG_AV_NODES_DUNBALDAR_SOUTH;
         //despawn marshal
         if (m_BgCreatures[AV_CPLACE_A_MARSHAL_SOUTH + tmp])
-            DelCreature(AV_CPLACE_A_MARSHAL_SOUTH + tmp);
+            DeleteCreature(AV_CPLACE_A_MARSHAL_SOUTH + tmp);
         else
             sLog->outError("BG_AV: playerdestroyedpoint: marshal %i doesn't exist", AV_CPLACE_A_MARSHAL_SOUTH + tmp);
         //spawn destroyed aura

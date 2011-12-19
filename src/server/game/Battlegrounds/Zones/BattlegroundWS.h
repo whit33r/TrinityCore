@@ -20,8 +20,10 @@
 #define __BATTLEGROUNDWS_H
 
 class BattlegroundMap;
+class BattlegroundWS;
 
-#include "Battleground.h"
+#include "BattlegroundMap.h"
+#include "BattlegroundScore.h"
 
 enum BG_WS_TimerOrScore
 {
@@ -150,9 +152,18 @@ enum BG_WS_Objectives
 
 class BattlegroundWGScore : public BattlegroundScore
 {
-    public:
-        BattlegroundWGScore() : FlagCaptures(0), FlagReturns(0) {};
+    friend class BattlegroundWS;
+    protected:
+        BattlegroundWGScore() : BattlegroundScore(), FlagCaptures(0), FlagReturns(0) {};
         virtual ~BattlegroundWGScore() {};
+
+        void AppendToPacket(WorldPacket* data)
+        {
+            *data << GetMemberCount<BattlegroundWGScore>();
+            *data << FlagCaptures;
+            *data << FlagReturns;
+        }
+
         uint32 FlagCaptures;
         uint32 FlagReturns;
 };
@@ -165,7 +176,7 @@ class BattlegroundWS : public BattlegroundMap
         ~BattlegroundWS();
 
         /* inherited from BattlegroundClass */
-        virtual void AddPlayer(Player* player);
+        virtual void OnPlayerJoin(Player* player);
         virtual void StartingEventCloseDoors();
         virtual void StartingEventOpenDoors();
 

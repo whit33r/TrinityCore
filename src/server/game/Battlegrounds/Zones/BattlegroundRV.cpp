@@ -16,7 +16,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Battleground.h"
+#include "BattlegroundMap.h"
+#include "BattlegroundScore.h"
 #include "BattlegroundRV.h"
 #include "ObjectAccessor.h"
 #include "Language.h"
@@ -92,13 +93,13 @@ void BattlegroundRV::StartingEventOpenDoors()
     setTimer(BG_RV_FIRST_TIMER);
 }
 
-void BattlegroundRV::AddPlayer(Player* player)
+void BattlegroundRV::OnPlayerJoin(Player* player)
 {
-    Battleground::AddPlayer(player);
+    BattlegroundMap::OnPlayerJoin(player);
     //create score and add it to map, default values are set in constructor
     BattlegroundRVScore* sc = new BattlegroundRVScore;
 
-    m_PlayerScores[player->GetGUID()] = sc;
+    ScoreMap[plr->GetGUIDLow()] = sc;
 
     UpdateWorldState(BG_RV_WORLD_STATE_A, GetAlivePlayersCountByTeam(ALLIANCE));
     UpdateWorldState(BG_RV_WORLD_STATE_H, GetAlivePlayersCountByTeam(HORDE));

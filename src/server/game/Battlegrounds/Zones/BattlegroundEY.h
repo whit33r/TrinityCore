@@ -20,8 +20,10 @@
 #define __BATTLEGROUNDEY_H
 
 #include "Language.h"
+#include "BattlegroundMap.h"
+#include "BattlegroundScore.h"
 
-class BattlegroundMap;
+class BattlegroundEY;
 
 enum BG_EY_Misc
 {
@@ -323,9 +325,17 @@ const BattlegroundEYCapturingPointStruct m_CapturingPointTypes[EY_POINTS_MAX] =
 
 class BattlegroundEYScore : public BattlegroundScore
 {
-    public:
-        BattlegroundEYScore () : FlagCaptures(0) {};
+    friend class BattlegroundEY;
+    protected:
+        BattlegroundEYScore () : BattlegroundScore(), FlagCaptures(0) {};
         virtual ~BattlegroundEYScore() {};
+
+        void AppendToPacket(WorldPacket* data)
+        {
+            *data << GetMemberCount<BattlegroundEYScore>();
+            *data << FlagCaptures;
+        }
+
         uint32 FlagCaptures;
 };
 
@@ -338,7 +348,7 @@ class BattlegroundEY : public BattlegroundMap
         void InitializeTextIds();    // Initializes text IDs that are used in the battleground at any possible phase.
 
         /* inherited from BattlegroundClass */
-        virtual void AddPlayer(Player* player);
+        virtual void OnPlayerJoin(Player* player);
         virtual void StartingEventCloseDoors();
         virtual void StartingEventOpenDoors();
 

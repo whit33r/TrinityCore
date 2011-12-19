@@ -16,7 +16,8 @@
  * with this program. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "Battleground.h"
+#include "BattlegroundMap.h"
+#include "BattlegroundScore.h"
 #include "BattlegroundSA.h"
 #include "Language.h"
 #include "Player.h"
@@ -26,8 +27,6 @@
 
 BattlegroundSA::BattlegroundSA()
 {
-    m_BgObjects.resize(BG_SA_MAXOBJ);
-    m_BgCreatures.resize(BG_SA_MAXNPC + BG_SA_MAX_GY);
     TimerEnabled = false;
     UpdateWaitTimer = 0;
     SignaledRoundTwo = false;
@@ -427,11 +426,13 @@ void BattlegroundSA::FillInitialWorldStates(WorldPacket& data)
   data << uint32(BG_SA_LEFT_ATT_TOKEN_ALL) <<  ally_attacks;
 }
 
-void BattlegroundSA::AddPlayer(Player* player)
+void BattlegroundSA::OnPlayerJoin(Player* player)
 {
-    Battleground::AddPlayer(player);
+    BattlegroundMap::OnPlayerJoin(player);
+
     //create score and add it to map, default values are set in constructor
     BattlegroundSAScore* sc = new BattlegroundSAScore;
+    ScoreMap[plr->GetGUIDLow()] = sc;
 
     if (!ShipsStarted)
     {
@@ -456,7 +457,6 @@ void BattlegroundSA::AddPlayer(Player* player)
             player->TeleportTo(607, 1209.7f, -65.16f, 70.1f, 0.0f, 0);
     }
     SendTransportInit(player);
-    m_PlayerScores[player->GetGUID()] = sc;
 }
 
 void BattlegroundSA::RemovePlayer(Player* /*player*/, uint64 /*guid*/, uint32 /*team*/)
@@ -472,16 +472,16 @@ void BattlegroundSA::HandleAreaTrigger(Player* /*Source*/, uint32 /*Trigger*/)
 
 void BattlegroundSA::UpdatePlayerScore(Player* Source, uint32 type, uint32 value, bool doAddHonor)
 {
-    BattlegroundScoreMap::iterator itr = m_PlayerScores.find(Source->GetGUID());
-    if (itr == m_PlayerScores.end())                         // player not found...
+    BattlegroundScoreMap::const_iterator itr = ScoreMap.find(Source->GetGUIDLow());
+    if (itr == ScoreMap.end())                         // player not found...
         return;
 
     if (type == SCORE_DESTROYED_DEMOLISHER)
-        ((BattlegroundSAScore*)itr->second)->demolishers_destroyed += value;
+        ((BattlegroundSAScore*)itr->second)->DemolishersDestroyed += value;
     else if (type == SCORE_DESTROYED_WALL)
-        ((BattlegroundSAScore*)itr->second)->gates_destroyed += value;
+        ((BattlegroundSAScore*)itr->second)->GatesDestroyed += value;
     else
-        Battleground::UpdatePlayerScore(Source, type, value, doAddHonor);
+        BattlegroundMap::UpdatePlayerScore(Source, type, value, doAddHonor);
 }
 
 void BattlegroundSA::TeleportPlayers()

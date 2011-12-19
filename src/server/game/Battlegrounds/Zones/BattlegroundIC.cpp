@@ -17,7 +17,8 @@
  */
 
 #include "Player.h"
-#include "Battleground.h"
+#include "BattlegroundMap.h"
+#include "BattlegroundScore.h"
 #include "BattlegroundIC.h"
 #include "Language.h"
 #include "WorldPacket.h"
@@ -287,13 +288,13 @@ bool BattlegroundIC::IsAllNodesConrolledByTeam(uint32 team) const
     return count == NODE_TYPE_WORKSHOP;
 }
 
-void BattlegroundIC::AddPlayer(Player* player)
+void BattlegroundIC::OnPlayerJoin(Player* player)
 {
-    Battleground::AddPlayer(player);
+    BattlegroundMap::OnPlayerJoin(player);
     //create score and add it to map, default values are set in constructor
     BattlegroundICScore* sc = new BattlegroundICScore;
 
-    m_PlayerScores[player->GetGUID()] = sc;
+    ScoreMap[plr->GetGUIDLow()] = sc;
 
     if (nodePoint[NODE_TYPE_QUARRY].nodeState == (player->GetTeamId() == TEAM_ALLIANCE ? NODE_STATE_CONTROLLED_A : NODE_STATE_CONTROLLED_H))
         player->CastSpell(player, SPELL_QUARRY, true);
@@ -322,9 +323,8 @@ void BattlegroundIC::HandleAreaTrigger(Player* /*Source*/, uint32 /*Trigger*/)
 
 void BattlegroundIC::UpdatePlayerScore(Player* Source, uint32 type, uint32 value, bool doAddHonor)
 {
-    std::map<uint64, BattlegroundScore*>::iterator itr = m_PlayerScores.find(Source->GetGUID());
-
-    if (itr == m_PlayerScores.end())                         // player not found...
+    BattlegroundScoreMap::const_iterator itr = ScoreMap.find(Source->GetGUIDLow());
+    if (itr == ScoreMap.end())                         // player not found...
         return;
 
     switch (type)
@@ -336,7 +336,7 @@ void BattlegroundIC::UpdatePlayerScore(Player* Source, uint32 type, uint32 value
             ((BattlegroundICScore*)itr->second)->BasesDefended += value;
             break;
         default:
-            Battleground::UpdatePlayerScore(Source, type, value, doAddHonor);
+            BattlegroundMap::UpdatePlayerScore(Source, type, value, doAddHonor);
             break;
     }
 }

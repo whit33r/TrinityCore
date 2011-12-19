@@ -19,6 +19,9 @@
 #ifndef __BATTLEGROUNDIC_H
 #define __BATTLEGROUNDIC_H
 
+#include "BattlegroundMap.h"
+#include "BattlegroundScore.h"
+
 class BattlegroundMap;
 
 const uint32 BG_IC_Factions[2] =
@@ -849,9 +852,18 @@ enum HonorRewards
 
 class BattlegroundICScore : public BattlegroundScore
 {
-    public:
-        BattlegroundICScore() : BasesAssaulted(0), BasesDefended(0) {};
+    friend class BattlegroundIC;
+    protected:
+        BattlegroundICScore() : BattlegroundScore(), BasesAssaulted(0), BasesDefended(0) {};
         virtual ~BattlegroundICScore() {};
+
+        void AppendToPacket(WorldPacket* data)
+        {
+            *data << GetMemberCount<BattlegroundICScore>();
+            *data << BasesAssaulted;
+            *data << BasesDefended;
+        }
+
         uint32 BasesAssaulted;
         uint32 BasesDefended;
 };
@@ -865,7 +877,7 @@ class BattlegroundIC : public BattlegroundMap
         void InitializeTextIds();    // Initializes text IDs that are used in the battleground at any possible phase.
 
         /* inherited from BattlegroundClass */
-        virtual void AddPlayer(Player* player);
+        virtual void OnPlayerJoin(Player* player);
         virtual void StartingEventCloseDoors();
         virtual void StartingEventOpenDoors();
         virtual void PostUpdateImpl(uint32 diff);

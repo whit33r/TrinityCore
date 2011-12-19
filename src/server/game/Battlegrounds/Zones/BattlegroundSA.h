@@ -19,15 +19,26 @@
 #ifndef __BATTLEGROUNDSA_H
 #define __BATTLEGROUNDSA_H
 
+#include "BattlegroundScore.h"
+
 class BattlegroundMap;
 
 class BattlegroundSAScore : public BattlegroundScore
 {
-    public:
-        BattlegroundSAScore(): demolishers_destroyed(0), gates_destroyed(0) {};
+    friend class BattlegroundSA;
+    protected:
+        BattlegroundSAScore() : BattlegroundScore(), DemolishersDestroyed(0), GatesDestroyed(0) {};
         virtual ~BattlegroundSAScore() {};
-    uint8 demolishers_destroyed;
-    uint8 gates_destroyed;
+
+        void AppendToPacket(WorldPacket* data)
+        {
+            *data << GetMemberCount<BattlegroundSAScore>();
+            *data << DemolishersDestroyed;
+            *data << GatesDestroyed;
+        }
+
+        uint32 DemolishersDestroyed;
+        uint32 GatesDestroyed;
 };
 
 #define BG_SA_FLAG_AMOUNT 3
@@ -425,7 +436,7 @@ class BattlegroundSA : public BattlegroundMap
 
         /* inherited from BattlegroundClass */
         /// Called when a player join battle
-        virtual void AddPlayer(Player* player);
+        virtual void OnPlayerJoin(Player* player);
         /// Called when battle start
         virtual void StartingEventCloseDoors();
         virtual void StartingEventOpenDoors();

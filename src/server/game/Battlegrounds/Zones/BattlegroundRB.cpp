@@ -45,7 +45,7 @@ void BattlegroundRB::StartingEventOpenDoors()
 
 void BattlegroundRB::AddPlayer(Player* player)
 {
-    Battleground::AddPlayer(player);
+    Battleground::OnPlayerJoin(player);
     //create score and add it to map, default values are set in constructor
     BattlegroundRBScore* sc = new BattlegroundRBScore;
 
