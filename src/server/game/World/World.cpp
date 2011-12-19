@@ -1155,6 +1155,11 @@ void World::LoadConfigSettings(bool reload)
     m_int_configs[CONFIG_INTERVAL_LOG_UPDATE] = ConfigMgr::GetIntDefault("RecordUpdateTimeDiffInterval", 60000);
     m_int_configs[CONFIG_MIN_LOG_UPDATE] = ConfigMgr::GetIntDefault("MinRecordUpdateTimeDiff", 100);
     m_int_configs[CONFIG_NUMTHREADS] = ConfigMgr::GetIntDefault("MapUpdate.Threads", 1);
+    if (m_int_configs[CONFIG_NUMTHREADS] < 1)
+    {
+        sLog->outError("MapUpdate.Threads must be greater than 0");
+        m_int_configs[CONFIG_NUMTHREADS] = 1;
+    }
     m_int_configs[CONFIG_MAX_RESULTS_LOOKUP_COMMANDS] = ConfigMgr::GetIntDefault("Command.LookupMaxResults", 0);
 
     // chat logging
