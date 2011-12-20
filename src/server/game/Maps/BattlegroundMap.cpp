@@ -22,19 +22,24 @@
 #include "WorldPacket.h"
 #include "ObjectMgr.h"
 #include "Player.h"
+#include "Formulas.h"
 
-BattlegroundMap::BattlegroundMap(uint32 id, time_t expiry, uint32 instanceId, Map* parent, uint8 spawnMode, BattlegroundTemplate* bgTemplate)
-    : Map(id, expiry, instanceId, spawnMode, parent),
+BattlegroundMap::BattlegroundMap(uint32 id, time_t expiry, uint32 instanceId, BattlegroundTemplate* bgTemplate)
+    : MapInstanced(id, expiry),
     _template(bgTemplate),
-    _preparationPhase(BG_STARTING_EVENT_FIRST)
+    _instanceId(instanceId),
+    PreparationPhase(BG_STARTING_EVENT_FIRST)
 {
-    InitializeTextIds();
+    InitializeTextIds();                // Subclasses define textIds 
     InitializePreparationDelayTimes();  // Subclasses define timers or choose default
     InitializePreparationDelayTimer();  // Assign value to the current timer
+    InitializeObjects();                // Adds objects to storage
+    InstallBattleground();              // Initialize variables
 }
 
 BattlegroundMap::~BattlegroundMap()
 {
+    DestroyBattleground();              // Cleanup
 }
 
 void BattlegroundMap::InitVisibilityDistance()
@@ -55,7 +60,7 @@ void BattlegroundMap::InitializePreparationDelayTimes()
 
 void BattlegroundMap::InitializePreparationDelayTimer()
 {
-    _preparationTimer = PreparationDelayTimers[BG_STARTING_EVENT_FIRST] - PreparationDelayTimers[BG_STARTING_EVENT_SECOND];
+    PreparationTimer = PreparationDelayTimers[BG_STARTING_EVENT_FIRST] - PreparationDelayTimers[BG_STARTING_EVENT_SECOND];
 }
 
 bool BattlegroundMap::CanEnter(Player* player)
@@ -101,12 +106,12 @@ void BattlegroundMap::Update(uint32 const& diff)
     {
         // If no one has been invited and is pending to join
         if (!_invitedCount[BG_TEAM_ALLIANCE] && !_invitedCount[BG_TEAM_HORDE])
-            _status = STATUS_WAIT_LEAVE;
+            Status = STATUS_WAIT_LEAVE;
 
         return;
     }
 
-    switch (_status)
+    switch (Status)
     {
         // Statuses in chronological order
         case STATUS_WAIT_JOIN:
@@ -128,37 +133,37 @@ void BattlegroundMap::Update(uint32 const& diff)
 
 void BattlegroundMap::ProcessPreparation(uint32 const& diff)
 {
-    ASSERT(_preparationTimer);
-    if (_preparationTimer <= diff)
-        _preparationTimer = 0;
+    ASSERT(PreparationTimer);
+    if (PreparationTimer <= diff)
+        PreparationTimer = 0;
     else
-        _preparationTimer -= diff;
-
+        PreparationTimer -= diff;
+    
     // No timer has passed yet, nothing to do
-    if (_preparationTimer)
+    if (PreparationTimer)
         return;
-
+    
     // Send message to the players
-    SendMessageToAll(PreparationPhaseTextIds[_preparationPhase,
-        _preparationPhase < BG_STARTING_EVENT_FOURTH ? CHAT_MSG_BG_SYSTEM_NEUTRAL : CHAT_MSG_RAID_BOSS_EMOTE);
+    SendMessageToAll(PreparationPhaseTextIds[PreparationPhase, 
+        PreparationPhase < BG_STARTING_EVENT_FOURTH ? CHAT_MSG_BG_SYSTEM_NEUTRAL : CHAT_MSG_RAID_BOSS_EMOTE);
 
     // Initialize timer for the next sub-phase of preparation.
-    switch (_preparationPhase)
+    switch (PreparationPhase)
     {
         case BG_STARTING_EVENT_FIRST:
-            _preparationTimer = PreparationDelayTimers[BG_STARTING_EVENT_SECOND] - PreparationDelayTimers[BG_STARTING_EVENT_THIRD];
-            _preparationPhase = BG_STARTING_EVENT_SECOND;
+            PreparationTimer = PreparationDelayTimers[BG_STARTING_EVENT_SECOND] - PreparationDelayTimers[BG_STARTING_EVENT_THIRD];
+            PreparationPhase = BG_STARTING_EVENT_SECOND;
             break;
         case BG_STARTING_EVENT_SECOND:
-            _preparationTimer = PreparationDelayTimers[BG_STARTING_EVENT_THIRD] - PreparationDelayTimers[BG_STARTING_EVENT_FOURTH];
-            _preparationPhase = BG_STARTING_EVENT_THIRD;
+            PreparationTimer = PreparationDelayTimers[BG_STARTING_EVENT_THIRD] - PreparationDelayTimers[BG_STARTING_EVENT_FOURTH];
+            PreparationPhase = BG_STARTING_EVENT_THIRD;
             break;
         case BG_STARTING_EVENT_THIRD:
-            _preparationTimer = PreparationDelayTimers[BG_STARTING_EVENT_FOURTH];
-            _preparationPhase = BG_STARTING_EVENT_FOURTH;
+            PreparationTimer = PreparationDelayTimers[BG_STARTING_EVENT_FOURTH];
+            PreparationPhase = BG_STARTING_EVENT_FOURTH;
             break;
         case BG_STARTING_EVENT_FOURTH:
-            _status = STATUS_IN_PROGRESS;
+            Status = STATUS_IN_PROGRESS;
             StartBattleground();
             break;
     }
@@ -166,34 +171,40 @@ void BattlegroundMap::ProcessPreparation(uint32 const& diff)
 
 void BattlegroundMap::ProcessInProgress(uint32 const& diff)
 {
-    ASSERT(EndTimer);
-    if (EndTimer <= diff || (_prematureCountdownTimer && _prematureCountdownTimer <= diff))
+    if ((EndTimer && EndTimer <= diff))
+    {
+        OnTimeoutReached();
+        Status = STATUS_WAIT_LEAVE;
+        PostEndTimer = TIME_TO_AUTOREMOVE:
+    }
+    else if (PrematureCountdownTimer && PrematureCountdownTimer <= diff))
     {
         // This method will be overridden by inherited classes
         // and it will define the winner of the battleground
-        EndBattleground();
-        _status = STATUS_WAIT_LEAVE;
-        _postEndTimer = TIME_TO_AUTOREMOVE:
+        EndBattleground(WINNER_NONE);
+        Status = STATUS_WAIT_LEAVE;
+        PostEndTimer = TIME_TO_AUTOREMOVE:
     }
     else
     {
-        EndTimer -= diff;
+        if (EndTimer)
+            EndTimer -= diff;
         if (_prematureCountdownTimer)
-+            _prematureCountdownTimer -= diff;
+            _prematureCountdownTimer -= diff;
     }
     break;
 }
 
 void BattlegroundMap::ProcessEnded(uint32 const& diff)
 {
-    ASSERT(_postEndTimer);
-    if (_postEndTimer <= diff)
+    ASSERT(PostEndTimer);
+    if (PostEndTimer <= diff)
     {
         RemoveAllPlayers();
         DestroyBattleground();
-    }
+    }    
     else
-        _postEndTimer -= diff;
+        PostEndTimer -= diff;
 }
 
 void BattlegroundMap::RemoveAllPlayers()
@@ -211,7 +222,7 @@ void BattlegroundMap::RemoveAllPlayers()
     }
 }
 
-void BattlegroundMap::SendMessageToAll(int32 entry, ChatMsg type)
+void BattlegroundMap::SendMessageToAll(int32 entry, ChatMsg type, Unit* source /*=NULL*/, Language language /*= LANG_UNIVERSAL*/)
 {
     const char *format = sObjectMgr->GetTrinityStringForDBCLocale(entry);
 
@@ -221,17 +232,23 @@ void BattlegroundMap::SendMessageToAll(int32 entry, ChatMsg type)
     vsnprintf(str, 1024, format, ap);
     va_end(ap);
 
+    SendMessageToAll(str, type, source, language);
+}
+
+void BattlegroundMap::SendMessageToAll(char const* string, ChatMsg type, Unit* source /*=NULL*/, Language language /*= LANG_UNIVERSAL*/)
+{
     size_t stringLength = strlen(str) + 1;
     size_t packetSize = 1 + 4 + 8 + 4 + 4 + 1 + 8 + 4 + stringLength + 1;
 
+    uint64 targetGuid = source ? source->GetGUID() : 0;
     WorldPacket data(SMSG_MESSAGECHAT, packetSize);
     data << uint8(type);
-    data << uint32(LANG_UNIVERSAL);
-    data << uint64(0);
+    data << uint32(language);
+    data << uint64(targetGuid);
     data << uint32(0);                                // 2.1.0
     data << uint32(1);
     data << uint8(0);
-    data << uint64(0);
+    data << uint64(targetGuid);
     data << uint32(stringLength);
     data << str;
     data << uint8(0);
@@ -239,14 +256,65 @@ void BattlegroundMap::SendMessageToAll(int32 entry, ChatMsg type)
     SendPacketToAll(&data);
 }
 
+void BattlegroundMap::PlaySoundToAll(uint32 soundId)
+{
+    WorldPacket data(SMSG_PLAY_SOUND, 4);
+    data << uint32(soundId);
+    SendPacketToAll(&data);
+}
+
+inline char const* BattlegroundMap::ParseStrings(int32 mainEntry, int32 args1, int32 args2 /*=0*/)
+{
+    char const* text = sObjectMgr->GetTrinityStringForDBCLocale(mainEntry);
+    char const* arg1str = args1 ? sObjectMgr->GetTrinityStringForDBCLocale(args1) : "";
+    char const* arg2str = args2 ? sObjectMgr->GetTrinityStringForDBCLocale(args2) : "";
+
+    char str[1024];
+    snprintf(str, 1024, text, arg1str, arg2str);
+
+    return &str;
+}
+
+inline char const* BattlegroundMap::ParseStrings(int32 mainEntry, char const* args1, char const* args2/* = NULL*/)
+{
+    char const* text = sObjectMgr->GetTrinityStringForDBCLocale(mainEntry);
+
+    char str[1024];
+    snprintf(str, 1024, text, args1, args2);
+
+    return &str;
+}
+
+inline char const* BattlegroundMap::ParseStrings(char const* mainString, int32 args)
+{
+    char const* text = sObjectMgr->GetTrinityStringForDBCLocale(args);
+
+    char str[1024];
+    snprintf(str, 1024, mainString, text);
+
+    return &str;   
+}
+
+inline char const* BattlegroundMap::ParseStrings(int32 mainEntry, int32 args1, const char* args2 /*= NULL*/)
+{
+    char const* text = sObjectMgr->GetTrinityStringForDBCLocale(mainEntry);
+    char const* arg1str = args1 ? sObjectMgr->GetTrinityStringForDBCLocale(args1) : "";
+
+    char str[1024];
+    snprintf(str, 1024, text, arg1str, args2);
+
+    return &str;
+}
+
 void BattlegroundMap::OnPlayerJoin(Player* player)
 {
     ASSERT(player);
-    ASSERT(_status != STATUS_WAIT_LEAVE);
+    ASSERT(Status != STATUS_WAIT_LEAVE);
 
     SendPlayerJoinedPacket(player);)
 
     player->InstanceValid = true;
+    player->SetBGTeam(player->GetTeamId());
     ++_participantCount[player->GetBGTeam()];
 
     if (AreTeamsInBalance())
@@ -259,26 +327,32 @@ void BattlegroundMap::OnPlayerExit(Player* player)
 
     SendPlayerLeftPacket(player);
 
-    --_participantCount[player->GetBGTeam()];
+    --ParticipantCount[player->GetBGTeam()];
 
-    if (_status == STATUS_IN_PROGRESS && !AreTeamsInBalance())
-        _prematureCountdownTimer = sBattlegroundMgr->GetPrematureFinishTime();
+    if (Status == STATUS_IN_PROGRESS && !AreTeamsInBalance())
+        PrematureCountdownTimer = sBattlegroundMgr->GetPrematureFinishTime();
+
+    if (Status != STATUS_WAIT_LEAVE)
+    {
+        delete PlayerScores[player->GetGUIDLow()];
+        PlayerScores.erase(player->GetGUIDLow());
+    }
 }
 
 bool BattlegroundMap::AreTeamsInBalance() const
 {
-    return !(_participantCount[BG_TEAM_HORDE] < _template.MinPlayersPerTeam ||
-             _participantCount[BG_TEAM_ALLIANCE] < _template.MinPlayersPerTeam);
+    return !(ParticipantCount[BG_TEAM_HORDE] < _template.MinPlayersPerTeam ||
+             ParticipantCount[BG_TEAM_ALLIANCE] < _template.MinPlayersPerTeam);
 }
 
-GameObject* BattlegroundMap::AddObject(uint32 type, uint32 entry, float x, float y, float z, float o, float r0, float r1, float r2, float r3, uint32 respawnTime /*= 0*/)
+GameObject* BattlegroundMap::AddGameObject(uint32 type, uint32 entry, float x, float y, float z, float o, float r0, float r1, float r2, float r3, uint32 respawnTime /*= 0*/)
 {
     Position pos;
     pos.Relocate(x, y, z, o);
-    return AddObject(type, entry, &pos, r0, r1, r2, r3, respawnTime);
+    return AddGameObject(type, entry, &pos, r0, r1, r2, r3, respawnTime);
 }
 
-GameObject* BattlegroundMap::AddObject(uint32 type, uint32 entry, Position* pos, float rotation0, float rotation1, float rotation2, float rotation3, uint32 respawnTime /*= 0*/)
+GameObject* BattlegroundMap::AddGameObject(uint32 type, uint32 entry, Position* pos, float rotation0, float rotation1, float rotation2, float rotation3, uint32 respawnTime /*= 0*/)
 {
     // Must be created this way, adding to godatamap would add it to the base map of the instance
     // and when loading it (in go::LoadFromDB()), a new guid would be assigned to the object, and a new object would be created
@@ -287,8 +361,8 @@ GameObject* BattlegroundMap::AddObject(uint32 type, uint32 entry, Position* pos,
     if (!go->Create(sObjectMgr->GenerateLowGuid(HIGHGUID_GAMEOBJECT), entry, this,
         PHASEMASK_NORMAL, pos->GetPositionX(), pos->GetPositionY, pos->GetPositionZ(), pos->GetOrientation(), rotation0, rotation1, rotation2, rotation3, 100, GO_STATE_READY))
     {
-        sLog->outError("BattlegroundMap::AddObject: cannot create gameobject (entry: %u) for BG (map: %u, instance id: %u)!",
-            entry, m_MapId, m_InstanceID);
+        sLog->outError("BattlegroundMap::AddObject: cannot create gameobject (entry: %u) for BG (map: %u)!",
+            entry, GetId());
         delete go;
         return NULL;
     }
@@ -304,19 +378,24 @@ GameObject* BattlegroundMap::AddObject(uint32 type, uint32 entry, Position* pos,
     return go;
 }
 
-void BattlegroundMap::SpawnObject(uint32 type, uint32 respawntime)
+GameObject* BattlegroundMap::GetGameObject(uint32 type)
 {
     ASSERT(type < ObjectGUIDsByType.size());
 
     uint64 guid = ObjectGUIDsByType[type];
     if (!guid)
     {
-       sLog->outError("BattlegroundMap::SpawnObject: tired to spawn defined type %u, but was not found in current map. "
-                        "Are you missing an AddObject call in the Battleground initialization?", type);
-        return;
+        sLog->outError("BattlegroundMap::GetGameObject: tired to get defined type %u, but was not found in current map. "
+            "Are you missing an AddObject call in the Battleground initialization?", type);
+        return NULL;
     }
 
-    GameObject* object = GetGameObject(guid);
+    return Map::GetGameObject(guid);
+}
+
+void BattlegroundMap::SpawnGameObject(uint32 type, uint32 respawntime)
+{
+    GameObject* object = GetGameObject(type);
     // If it's present in ObjectGUIDsByType it MUST also be in world
     ASSERT(object);
     ASSERT(object->IsInWorld());
@@ -327,11 +406,11 @@ void BattlegroundMap::SpawnObject(uint32 type, uint32 respawntime)
     else if (object->getLootState() == GO_JUST_DEACTIVATED)
         // Change state from GO_JUST_DEACTIVATED to GO_READY in case battleground is starting again
         object->SetLootState(GO_READY);
-
+    
     object->SetRespawnTime(respawntime);
 }
 
-bool BattlegroundMap::DeleteObject(uint32 type)
+bool BattlegroundMap::DeleteGameObject(uint32 type)
 {
     ASSERT(type < ObjectGUIDsByType.size());
 
@@ -348,10 +427,62 @@ bool BattlegroundMap::DeleteObject(uint32 type)
         sLog->outError("BattlegroundMap::DeleteObject: Tried to delete object type: %u, entry: %u from battleground (map: %u), but object was not found in world!", type, GUID_ENPART(guid), GetId());
         return false;      // Was added, but now it's not in world any more. Data is desynchronized
     }
+
     object->SetRespawnTime(0);
     object->Delete();
     ObjectGUIDsByType[type] = 0;
     return true;
+}
+
+// Some doors aren't despawned so we cannot handle their closing in gameobject::update()
+// It would be nice to correctly implement GO_ACTIVATED state and open/close doors in gameobject code
+void BattlegroundMap::DoorClose(uint32 type)
+{
+    if (GameObject* obj = GetGameObject(type))
+    {
+        // If doors are open, close it
+        if (obj->getLootState() == GO_ACTIVATED && obj->GetGoState() != GO_STATE_READY)
+        {
+            // Change state to allow door to be closed
+            obj->SetLootState(GO_READY);
+            obj->UseDoorOrButton(RESPAWN_ONE_DAY);
+        }
+    }
+    else
+        sLog->outError("BattlegroundMap::DoorClose: door gameobject (type: %u, GUID: %u) not found for BG (map: %u)!",
+        type, GUID_LOPART(ObjectGUIDsByType[type]), GetId());
+}
+
+void BattlegroundMap::DoorOpen(uint32 type)
+{
+    if (GameObject* obj = GetGameObject(type))
+    {
+        // Change state to be sure they will be opened
+        obj->SetLootState(GO_READY);
+        obj->UseDoorOrButton(RESPAWN_ONE_DAY);
+    }
+    else
+        sLog->outError("BattlegroundMap::DoorOpen: door gameobject (type: %u, GUID: %u) not found for BG (map: %u, instance id: %u)!",
+        type, GUID_LOPART(ObjectGUIDsByType[type]), m_MapId, m_InstanceID);
+}
+
+void BattlegroundMap::AddSpiritGuide(uint32 type, float x, float y, float z, float o, uint32 team)
+{
+    uint32 entry = (team == BG_TEAM_ALLIANCE) ?
+        BG_CREATURE_ENTRY_A_SPIRITGUIDE :
+        BG_CREATURE_ENTRY_H_SPIRITGUIDE;
+
+    Creature* pCreature = AddCreature(entry, type, team, x, y, z, o);
+    pCreature->setDeathState(DEAD);
+    pCreature->SetUInt64Value(UNIT_FIELD_CHANNEL_OBJECT, pCreature->GetGUID());
+    // aura
+    // TODO: Fix display here
+    // pCreature->SetVisibleAura(0, SPELL_SPIRIT_HEAL_CHANNEL);
+    // casting visual effect
+    pCreature->SetUInt32Value(UNIT_CHANNEL_SPELL, SPELL_SPIRIT_HEAL_CHANNEL);
+    // correct cast speed
+    pCreature->SetFloatValue(UNIT_MOD_CAST_SPEED, 1.0f);
+    //pCreature->CastSpell(pCreature, SPELL_SPIRIT_HEAL_CHANNEL, true);
 }
 
 Creature* BattlegroundMap::AddCreature(uint32 entry, uint32 type, uint32 teamval, float x, float y, float z, float o, uint32 respawntime /*= 0*/)
@@ -380,7 +511,7 @@ Creature* BattlegroundMap::AddCreature(uint32 entry, uint32 type, uint32 teamval
     if (!creatureInfo)
     {
         sLog->outError("BattlegroundMap::AddCreature: creature template (entry: %u) does not exist for BG (map: %u)!",
-   +            entry, GetId());
+            entry, GetId());
         delete creature;
         return NULL;
     }
@@ -390,12 +521,26 @@ Creature* BattlegroundMap::AddCreature(uint32 entry, uint32 type, uint32 teamval
     creature->SetSpeed(MOVE_RUN, creatureInfo->speed_run);
 
     Add(creature);
-    _objectGUIDsByType[type] = creature->GetGUID();
+    ObjectGUIDsByType[type] = creature->GetGUID();
 
     if (respawntime)
         creature->SetRespawnDelay(respawntime);
 
     return creature;
+}
+
+Creature* BattlegroundMap::GetCreature(uint32 type)
+{
+    ASSERT(type < ObjectGUIDsByType.size());
+
+    uint64 guid = ObjectGUIDsByType[type];
+    if (!guid)
+    {
+        sLog->outError("BattlegroundMap::GetCreature: Tried to delete creature type: %u from battleground (map: %u), but creature was not registered in this BattlegroundMap!", type, GetId());
+        return NULL;        // Already deleted or never added
+    }
+
+    return Map::GetCreature(guid);
 }
 
 bool BattlegroundMap::DeleteCreature(uint32 type)
@@ -419,6 +564,15 @@ bool BattlegroundMap::DeleteCreature(uint32 type)
     creature->AddObjectToRemoveList();
     ObjectGUIDsByType[type] = 0;
     return true;
+}
+
+int32 BattlegroundMap::GetObjectType(uint64 const& guid) const
+{
+    for (uint32 i = 0; i < ObjectGUIDsByType.size(); ++i)
+        if (ObjectGUIDsByType[i] == guid)
+            return i;
+
+    return -1;
 }
 
 void BattlegroundMap::UpdatePlayerScore(Player* source, uint32 type, uint32 value, bool addHonor /*= true*/)
@@ -500,7 +654,10 @@ void BattlegroundMap::BuildPVPLogDataPacket(WorldPacket& data)
 
     *data << uint32(PlayerScores.size());
     for (BattlegroundScoreMap::const_iterator itr = PlayerScores.begin(); itr != PlayerScores.end(); ++itr)
+    {
+        *data << uint64(MAKE_NEW_GUID(itr->first, 0, HIGHGUID_PLAYER));
         itr->second->AppendToPacket(&data);
+    }
 }
 
 void BattlegroundMap::SendPacketToAll(WorldPacket* data)
@@ -517,4 +674,45 @@ void BattlegroundMap::SendPacketToTeam(WorldPacket* data, uint32 team, Player* e
         if (Player* player = itr->getSource())
             if (player->GetSession() && team == player->GetBGTeam() && player != exclude))
                 player->GetSession()->SendPacket(&data);
+}
+
+inline uint32 BattlegroundMap::GetBonusHonorFromKill uint32 kills) const
+{
+    //variable kills means how many honorable kills you scored (so we need kills * honor_for_one_kill)
+    return Trinity::Honor::hk_honor_at_level(std::min(GetMaxLevel(), 80U), float(kills));
+}
+
+inline void BattlegroundMap::StartTimedAchievement(AchievementCriteriaTimedTypes type, uint32 entry)
+{
+    for (MapRefManager::iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
+        if (Player* player = itr->getSource())
+            player->GetAchievementMgr().StartTimedAchievement(type, entry);
+}
+
+void BattlegroundMap::RewardHonorToTeam(uint32 amount, BattlegroundTeamId team)
+{
+    for (MapRefManager::iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
+        if (Player* player = itr->getSource() && player->GetBGTeam() == team)
+            UpdatePlayerScore(player, SCORE_BONUS_HONOR, amount);
+}
+
+void BattlegroundMap::RewardReputationToTeam(uint32 targetFaction, uint32 amount, BattlegroundTeamId team)
+{
+    for (MapRefManager::iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
+        if (Player* player = itr->getSource() && player->GetBGTeam() == team)
+            player->GetReputationMgr().ModifyReputation(targetFaction, amount);
+}
+
+void BattlegroundMap::CastSpellOnTeam(uint32 spell, BattlegroundTeamId team)
+{
+    for (MapRefManager::iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
+        if (Player* player = itr->getSource() && player->GetBGTeam() == team)
+            player->CastSpell(player, spell, true);
+}
+
+void BattlegroundMap::RemoveAuraOnTeam(uint32 spell, BattlegroundTeamId team)
+{
+    for (MapRefManager::iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
+        if (Player* player = itr->getSource() && player->GetBGTeam() == team)
+            player->RemoveAura(spell);
 }

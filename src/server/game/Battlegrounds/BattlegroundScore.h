@@ -22,12 +22,14 @@
 
 class BattlegroundScore
 {
+    friend class BattlegroundMap;
+    friend class ArenaMap;
     protected:
         BattlegroundScore() : KillingBlows(0), Deaths(0), HonorableKills(0),
             BonusHonor(0), DamageDone(0), HealingDone(0) {};
         virtual ~BattlegroundScore() {};
 
-        virtual void AppendToPacket(WorldPacket* data)
+        virtual void AppendToPacket(WorldPacket* data) 
         {
             *data << KillingBlows;
             *data << HonorableKills;
@@ -39,14 +41,13 @@ class BattlegroundScore
 
         template <class T> uint32 GetMemberCount() { return sizeof(T) / sizeof(uint32); }
 
-        // Default score, present in every type
+        // Default score, present in every type 
         uint32 KillingBlows;
         uint32 Deaths;
         uint32 HonorableKills;
         uint32 BonusHonor;
         uint32 DamageDone;
         uint32 HealingDone;
-
 };
 
 #endif

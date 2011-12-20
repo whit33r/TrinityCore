@@ -18,8 +18,24 @@
 #include "ArenaMap.h"
 #include "ArenaTeam.h"
 #include "ArenaTeamMgr.h"
+#include "ArenaScore.h"
+#include "BattlegroundScore.h"
 #include "Player.h"
 #include "Log.h"
+
+void ArenaMap::InstallBattleground()
+{
+    // Iterate this way for consistency's sake - client expects it to be sent in this order
+    for (uint8 i = WINNER_ALLIANCE; i >= WINNER_HORDE; ++i)
+        _arenaTeamScores[i] = new ArenaTeamScore;
+}
+
+void ArenaMap::DestroyBattleground()
+{
+    // Iterate this way for consistency's sake - client expects it to be sent in this order
+    for (uint8 i = WINNER_ALLIANCE; i >= WINNER_HORDE; ++i)
+        delete _arenaTeamScores[i];
+}
 
 void ArenaMap::InitializeTextIds()
 {
@@ -37,11 +53,19 @@ void ArenaMap::InitializePreparationDelayTimes()
     PreparationDelayTimers[BG_STARTING_EVENT_FOURTH] = BG_START_DELAY_NONE;
 }
 
-void ArenaMap::EndBattleground(uint32 winner)
+void ArenaMap::StartBattleground()
 {
-    BattlegroundMap::EndBattleground();
+    BattlegroundMap::StartBattleground();
+    EndTimer = 47 * MINUTE * IN_MILLISECONDS;
+    _playersAlive[BG_TEAM_ALLIANCE] = ParticipantCount[BG_TEAM_ALLIANCE];
+    _playersAlive[BG_TEAM_HORDE] = ParticipantCount[BG_TEAM_HORDE];
+}
 
-    uint32 loser = 1 - winner;
+void ArenaMap::EndBattleground(BattlegroundWinner winner)
+{
+    BattlegroundMap::EndBattleground(winner);
+
+    BattlegroundWinner loser = winner == WINNER_ALLIANCE ? WINNER_HORDE : WINNER_ALLIANCE;
 
     ArenaTeam* winnerTeam = _arenaTeams[winner];
     ArenaTeam* loserTeam = _arenaTeams[loser];
@@ -49,22 +73,112 @@ void ArenaMap::EndBattleground(uint32 winner)
     if (_rated && winner != WINNER_NONE)
     {
         uint32 loserTeamRating = loserTeam->GetRating();
-        uint32 loserMMR = loserTeam->GetAverageMMR(GetGroupForTeam(loserTeam));
+        uint32 loserMMR = loserTeam->GetAverageMMR(GetGroupForTeam(loser));
         uint32 winnerTeamRating = winnerTeam->GetRating();
-        uint32 winnerMMR = winnerTeam->GetAverageMMR(GetGroupForTeam(winnerTeam));
-
+        uint32 winnerMMR = winnerTeam->GetAverageMMR(GetGroupForTeam(winner));
+        
         uint32 winnerChange = winnerTeam->WonAgainst(loserMMR);
         uint32 loserChange = loserTeam->WonAgainst(winnerMMR);
-        sLog->outArena("Winner rating: %u, Loser rating: %u, Winner MMR: %u, Loser MMR: %u, Winner change: %d, Loser change: %d ---",
+        sLog->outArena("Winner rating: %u, Loser rating: %u, Winner MMR: %u, Loser MMR: %u, Winner change: %d, Loser change: %d",
             winnerTeamRating, loserTeamRating, winnerMMR, loserMMR, winnerChange, loserChange);
 
+        _arenaTeamScores[winner]->Assign(winnerChange, winnerMMR, winnerTeam->GetName());
+        _arenaTeamScores[loser]->Assign(loserChange, loserMMR, loserTeam->GetName());            
     }
+
+    // TODO: if WINNER_NONE - remove rating for both parties?
 }
 
 Group* ArenaMap::GetGroupForTeam(uint32 team) const
 {
-    for (MapRefManager::iterator itr = m_mapRefManager.begin(); itr != m_mapRefManager.end(); ++itr)
+    // Teams in arena's are in the same group
+    PlayerList const& players = GetPlayers();
+    for (MapRefManager::iterator itr = players.begin(); itr != players.end(); ++itr)
         if (Player* player = itr->getSource())
-            if (player->GetBGTeam() == winner)
+            if (player->GetBGTeam() == team)
                 return player->GetGroup();
+}
+
+void ArenaMap::BuildPVPLogDataPacket(WorldPacket& data)
+{
+    data.Initialize(MSG_PVP_LOG_DATA, (1+1+4+40*PlayerScores.size()));
+    data << uint8(1);                                      // 1 for arena's
+
+    for (uint8 i = WINNER_ALLIANCE; i >= WINNER_HORDE; ++i) // This is the order in which the client expects it.
+    {
+        uint32 ratingWon = _arenaTeamScores[i]->RatingChange > 0 ? _arenaTeamScores[i]->RatingChange : 0;
+        uint32 ratingLost = _arenaTeamScores[i]->RatingChange < 0 ? abs(_arenaTeamScores[i]->RatingChange) : 0;
+        
+        data << ratingWon;
+        data << ratingLost;
+        data << _arenaTeamScores[i]->MatchmakerRating;
+    }
+
+    for (uint8 i = WINNER_ALLIANCE; i >= WINNER_HORDE; ++i) // This is the order in which the client expects it.
+        data << _arenaTeamScores[i]->TeamName;
+
+    if (GetStatus() != STATUS_WAIT_LEAVE)
+        data << uint8(0);                                  // bg not ended
+    else
+    {
+        data << uint8(1);                                  // bg ended
+        data << uint8(GetWinningTeam());                   // who won
+    }
+
+    data << uint32(PlayerScores.size());
+    for (BattlegroundScoreMap::const_iterator itr = PlayerScores.begin(); itr != PlayerScores.end(); ++itr)
+    {
+        data << uint64(MAKE_NEW_GUID(itr->first, 0, HIGHGUID_PLAYER));
+        itr->second->AppendToPacket(&data);
+    }
+}
+
+void ArenaMap::OnPlayerJoin(Player* player)
+{
+    BattlegroundMap::OnPlayerJoin(player);
+
+    //create score and add it to map, default values are set in constructor
+    ArenaScore* sc = new ArenaScore(player->GetBGTeam());
+
+    PlayerScores[player->GetGUIDLow()] = sc;
+
+    UpdateArenaWorldState();
+}
+
+void ArenaMap::OnPlayerExit(Player* player)
+{
+    BattlegroundMap::OnPlayerExit(player);
+
+    if (Status == STATUS_WAIT_LEAVE)
+        return;
+
+    UpdateArenaWorldState();
+    CheckArenaWinConditions();
+}
+
+void ArenaMap::OnPlayerKill(Player* victim, Player* killer)
+{
+    BattlegroundMap::OnPlayerKill(victim, killer);
+
+    if (Status != STATUS_IN_PROGRESS)
+        return;
+
+    --_playersAlive[victim->GetBGTeam()];
+
+    UpdateArenaWorldState();
+    CheckArenaWinConditions();
+}
+
+void ArenaMap::UpdateArenaWorldState()
+{
+    UpdateWorldState(WORLD_STATE_ARENA_TEAM_H, _playersAlive[TEAM_HORDE]);
+    UpdateWorldState(WORLD_STATE_ARENA_TEAM_A, _playersAlive[TEAM_ALLIANCE]);
+}
+
+void ArenaMap::CheckArenaWinConditions()
+{
+    if (!_playersAlive[TEAM_ALLIANCE] && _playersAlive[TEAM_HORDE])
+        EndBattleground(WINNER_HORDE);
+    else if (!_playersAlive[TEAM_HORDE] && _playersAlive[TEAM_ALLIANCE])
+        EndBattleground(WINNER_ALLIANCE);
 }
