@@ -629,7 +629,7 @@ UpdateMask Player::updateVisualBits;
 #ifdef _MSC_VER
 #pragma warning(disable:4355)
 #endif
-Player::Player (WorldSession* session): Unit(), m_achievementMgr(this), m_reputationMgr(this)
+Player::Player(WorldSession* session): Unit(true), m_achievementMgr(this), m_reputationMgr(this)
 {
 #ifdef _MSC_VER
 #pragma warning(default:4355)
@@ -839,7 +839,6 @@ Player::Player (WorldSession* session): Unit(), m_achievementMgr(this), m_reputa
     m_grantableLevels = 0;
 
     m_ControlledByPlayer = true;
-    m_isWorldObject = true;
 
     sWorld->IncreasePlayerCount();
 
@@ -20198,7 +20197,7 @@ bool Player::ActivateTaxiPathTo(uint32 taxi_path_id, uint32 spellid /*= 0*/)
 void Player::CleanupAfterTaxiFlight()
 {
     m_taxi.ClearTaxiDestinations();        // not destinations, clear source node
-    Unmount();
+    Dismount();
     RemoveFlag(UNIT_FIELD_FLAGS, UNIT_FLAG_DISABLE_MOVE | UNIT_FLAG_TAXI_FLIGHT);
     getHostileRefManager().setOnlineOfflineState(true);
 }

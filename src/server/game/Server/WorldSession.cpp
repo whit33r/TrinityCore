@@ -225,7 +225,6 @@ bool WorldSession::Update(uint32 diff, PacketFilter& updater)
     //! Delete packet after processing by default
     bool deletePacket = true;
     //! To prevent infinite loop
-    bool delayedPackets = false;
     WorldPacket* firstDelayedPacket = NULL;
     //! If _recvQueue.peek() == firstDelayedPacket it means that in this Update call, we've processed all
     //! *properly timed* packets, and we're now at the part of the queue where we find
@@ -1041,8 +1040,8 @@ void WorldSession::ProcessQueryCallbacks()
     if (_addFriendCallback.IsReady())
     {
         std::string param = _addFriendCallback.GetParam();
-        _addFriendCallback.GetResult(result);
-        HandleAddFriendOpcodeCallBack(result, param);
+        _addFriendCallback.GetResult(result2);
+        HandleAddFriendOpcodeCallBack(result2, param);
         _addFriendCallback.FreeResult();
     }
 
