@@ -31,6 +31,7 @@
 #include "ObjectMgr.h"
 #include "Group.h"
 #include "LFGMgr.h"
+#include "GameobjKDTree.h"
 
 union u_map_magic
 {
@@ -67,6 +68,12 @@ Map::~Map()
 
     if (!m_scriptSchedule.empty())
         sScriptMgr->DecreaseScheduledScriptCount(m_scriptSchedule.size());
+
+    struct deleter
+    {
+        inline void operator()(void * d) const {delete d;}
+    };
+    std::for_each(extraData.begin(), extraData.end(), deleter());
 }
 
 bool Map::ExistMap(uint32 mapid, int gx, int gy)
@@ -224,6 +231,9 @@ i_scriptLock(false)
     Map::InitVisibilityDistance();
 
     sScriptMgr->OnCreateMap(this);
+
+    extraData.push_back( new KDTreeTest());
+    extraData.push_back( new TimeTracker(10000));
 }
 
 void Map::InitVisibilityDistance()
@@ -498,6 +508,18 @@ void Map::VisitNearbyCellsOf(WorldObject* obj, TypeContainerVisitor<Trinity::Obj
 
 void Map::Update(const uint32 t_diff)
 {
+    KDTreeTest& tree = *(KDTreeTest*)extraData[0];
+    if (tree.size())
+    {
+        TimeTracker& tr = *(TimeTracker*)extraData[1];
+        tr.Update(t_diff);
+        if (tr.Passed())
+        {
+            tree.balance();
+            tr.Reset(20000);
+        }
+    }
+
     /// update worldsessions for existing players
     for (m_mapRefIter = m_mapRefManager.begin(); m_mapRefIter != m_mapRefManager.end(); ++m_mapRefIter)
     {

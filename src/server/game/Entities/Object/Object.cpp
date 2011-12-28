@@ -43,6 +43,7 @@
 #include "SpellAuraEffects.h"
 
 #include "TemporarySummon.h"
+#include "gameobjkdtree.h"
 #include "Totem.h"
 #include "OutdoorPvPMgr.h"
 
@@ -1368,7 +1369,38 @@ bool WorldObject::IsWithinLOS(float ox, float oy, float oz) const
     float x, y, z;
     GetPosition(x, y, z);
     VMAP::IVMapManager* vMapManager = VMAP::VMapFactory::createOrGetVMapManager();
-    return vMapManager->isInLineOfSight(GetMapId(), x, y, z+2.0f, ox, oy, oz+2.0f);
+    bool static_los = vMapManager->isInLineOfSight(GetMapId(), x, y, z+2.0f, ox, oy, oz+2.0f);
+    bool dyn_los = true;
+
+    if (IsInWorld())
+    {
+        using namespace G3D;
+        struct AlwaysHit 
+        {
+            bool did_hit;
+            AlwaysHit() : did_hit(false) {}
+            bool operator()(const Ray&, const KDtreeObject*, float& distance)
+            {
+                did_hit = true;
+                return true;
+            }
+        };
+
+        Vector3 v1(x,y,z+2.0f);
+        Vector3 v2(ox, oy, oz+2.0f);
+        float maxDist = (v2 - v1).magnitude();
+
+        if (fuzzyGt(maxDist, 0) )
+        {
+            Ray r = Ray::fromOriginAndDirection(v1, (v2-v1) / maxDist);
+            AlwaysHit callback;
+            KDTreeTest * tr = (KDTreeTest*)m_currMap->extraData[0];
+            tr->intersectRay(r, callback, maxDist);
+            dyn_los = !callback.did_hit;
+        }
+    }
+    
+    return static_los && dyn_los;
 }
 
 bool WorldObject::GetDistanceOrder(WorldObject const* obj1, WorldObject const* obj2, bool is3D /* = true */) const

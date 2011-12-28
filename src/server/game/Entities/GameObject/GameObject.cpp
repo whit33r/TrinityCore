@@ -29,6 +29,7 @@
 #include "ScriptMgr.h"
 #include "CreatureAISelector.h"
 #include "Group.h"
+#include "GameobjKDTree.h"
 
 GameObject::GameObject() : WorldObject(false), m_goValue(new GameObjectValue), m_AI(NULL)
 {
@@ -123,6 +124,7 @@ void GameObject::AddToWorld()
     ///- Register the gameobject for guid lookup
     if (!IsInWorld())
     {
+        ((KDTreeTest*)GetMap()->extraData[0])->insert(this);
         if (m_zoneScript)
             m_zoneScript->OnGameObjectCreate(this);
 
@@ -136,6 +138,7 @@ void GameObject::RemoveFromWorld()
     ///- Remove the gameobject from the accessor
     if (IsInWorld())
     {
+        ((KDTreeTest*)GetMap()->extraData[0])->remove(this);
         if (m_zoneScript)
             m_zoneScript->OnGameObjectRemove(this);
 
