@@ -1,7 +1,7 @@
 #pragma once
 
 #include <G3D/KDTree.h>
-#include "Object.h"
+#include "ModelInstance.h"
 
 namespace G3D
 {
@@ -1544,11 +1544,21 @@ namespace G3D
     };
 }
 
-
-typedef WorldObject KDtreeObject;
-typedef G3D::KDTree2<KDtreeObject*> KDTreeTest;
-
 using G3D::Vector3;
+class ModelInstance_Overriden : public VMAP::ModelInstance
+{
+public:
+    ModelInstance_Overriden();
+
+    ~ModelInstance_Overriden();
+
+    const Vector3& getPosition() const { return iPos;}
+
+    bool initialize(const class GameObject & go, const struct GameObjectDisplayInfoEntry& info);
+};
+
+typedef ModelInstance_Overriden KDtreeObject;
+typedef G3D::KDTree2<KDtreeObject*> KDTreeTest;
 
 template<> struct HashTrait<KDtreeObject*>
 {

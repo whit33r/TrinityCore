@@ -31,8 +31,45 @@
 #include "Group.h"
 #include "GameobjKDTree.h"
 
+struct GOextraData
+{
+    ModelInstance_Overriden* model;
+
+public:
+
+    GOextraData() : model(0) {}
+
+    ~GOextraData()
+    {
+        delete model;
+    }
+
+    bool initCollision(const GameObject & go)
+    {
+        MANGOS_ASSERT(model == NULL);
+
+        GameObjectDisplayInfoEntry const* info = sGameObjectDisplayInfoStore.LookupEntry(go.GetGOInfo()->displayId);
+        if (!info)
+            return false;
+
+        ModelInstance_Overriden* mdl = new ModelInstance_Overriden();
+        if (!mdl->initialize(go, *info))
+        {
+            delete mdl;
+            return false;
+        }
+
+        model = mdl;
+        return true;
+    }
+
+    bool collisionEnabled() const{ return model;}
+};
+
 GameObject::GameObject() : WorldObject(false), m_goValue(new GameObjectValue), m_AI(NULL)
 {
+    extra = new GOextraData();
+
     m_objectType |= TYPEMASK_GAMEOBJECT;
     m_objectTypeId = TYPEID_GAMEOBJECT;
 
@@ -63,6 +100,7 @@ GameObject::~GameObject()
 {
     delete m_goValue;
     delete m_AI;
+    delete extra;
     //if (m_uint32Values)                                      // field array can be not exist if GameOBject not loaded
     //    CleanupsBeforeDelete();
 }
@@ -124,7 +162,11 @@ void GameObject::AddToWorld()
     ///- Register the gameobject for guid lookup
     if (!IsInWorld())
     {
-        ((KDTreeTest*)GetMap()->extraData[0])->insert(this);
+
+        if (extra->initCollision(*this))
+        {
+            ((KDTreeTest*)GetMap()->extraData[0])->insert(extra->model);
+        }
         if (m_zoneScript)
             m_zoneScript->OnGameObjectCreate(this);
 
@@ -138,7 +180,11 @@ void GameObject::RemoveFromWorld()
     ///- Remove the gameobject from the accessor
     if (IsInWorld())
     {
-        ((KDTreeTest*)GetMap()->extraData[0])->remove(this);
+        if (extra->collisionEnabled())
+        {
+            ((KDTreeTest*)GetMap()->extraData[0])->remove(extra->model);
+        }
+
         if (m_zoneScript)
             m_zoneScript->OnGameObjectRemove(this);
 
