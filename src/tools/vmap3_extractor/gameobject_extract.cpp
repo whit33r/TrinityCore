@@ -18,6 +18,11 @@ void ExtractGameobjectModels()
     std::string basepath = szWorkDirWmo;
     basepath += "/";
     std::string path;
+
+    FILE * model_list = fopen((basepath + "temp_gameobject_models").c_str(), "wb");
+    if (!model_list)
+        return;
+
     for (DBCFile::Iterator it = dbc.begin(); it != dbc.end(); ++it)
     {
         path = it->getString(1);
@@ -67,9 +72,16 @@ void ExtractGameobjectModels()
         Model mdl(path);
         if (mdl.open())
         {
-            mdl.ConvertToVMAPModel((basepath + name).c_str());
+            path = basepath + name;
+            mdl.ConvertToVMAPModel(path.c_str());
+
+            uint32 path_length = path.length();
+            fwrite(&path_length, sizeof(uint32), 1, model_list);
+            fwrite(path.c_str(), sizeof(char), path_length, model_list);
         }
     }
-    
+
+    fclose(model_list);
+
     printf("Done!\n");
 }
