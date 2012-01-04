@@ -8,6 +8,15 @@
 #define snprintf _snprintf
 #endif
 
+const char * GetPlainName(const char * FileName)
+{
+    const char * szTemp;
+
+    if((szTemp = strrchr(FileName, '\\')) != NULL)
+        FileName = szTemp + 1;
+    return FileName;
+}
+
 char * GetPlainName(char * FileName)
 {
     char * szTemp;

@@ -73,15 +73,6 @@ void strToLower(char* str)
     }
 }
 
-static const char * GetPlainName(const char * szFileName)
-{
-    const char * szTemp;
-
-    if((szTemp = strrchr(szFileName, '\\')) != NULL)
-        szFileName = szTemp + 1;
-    return szFileName;
-}
-
 // copied from contrib/extractor/System.cpp
 void ReadLiquidTypeTableDBC()
 {

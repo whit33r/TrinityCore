@@ -1,6 +1,6 @@
 #pragma once
 
-#include "g3d\kdtree.h"
+#include <G3D/KDTree.h>
 #include "Object.h"
 
 namespace G3D
