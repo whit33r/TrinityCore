@@ -31,7 +31,7 @@
 #include "ObjectMgr.h"
 #include "Group.h"
 #include "LFGMgr.h"
-#include "GameobjKDTree.h"
+#include "DynamicTree.h"
 
 union u_map_magic
 {
@@ -232,7 +232,7 @@ i_scriptLock(false)
 
     sScriptMgr->OnCreateMap(this);
 
-    extraData.push_back( new KDTreeTest());
+    extraData.push_back( new DynamicMapTree());
     extraData.push_back( new TimeTracker(10000));
 }
 
@@ -506,17 +506,21 @@ void Map::VisitNearbyCellsOf(WorldObject* obj, TypeContainerVisitor<Trinity::Obj
     }
 }
 
+static int unbalanced_times_limit = 30;
+
 void Map::Update(const uint32 t_diff)
 {
-    KDTreeTest& tree = *(KDTreeTest*)extraData[0];
+    DynamicMapTree& tree = *(DynamicMapTree*)extraData[0];
     if (tree.size())
     {
         TimeTracker& tr = *(TimeTracker*)extraData[1];
         tr.Update(t_diff);
         if (tr.Passed())
         {
-            tree.balance();
-            tr.Reset(20000);
+           tr.Reset(20000);
+
+           if (tree.unbalanced_times > unbalanced_times_limit)
+               tree.balance();
         }
     }
 

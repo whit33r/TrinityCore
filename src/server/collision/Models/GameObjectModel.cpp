@@ -1,13 +1,33 @@
+/*
+ * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
 
+#include "vmap/VMapFactory.h"
+#include "vmap/VMapManager2.h"
 
-#include "VMapFactory.h"
-#include "VMapManager2.h"
-#include "G3D/stringutils.h"
-
-#include "GameobjKDTree.h"
 #include "GameObject.h"
 #include "World.h"
-#include "WorldModel.h"
+#include "GameobjectModel.h"
+
+ModelInstance_Overriden::~ModelInstance_Overriden()
+{
+    if (iModel)
+        ((VMAP::VMapManager2*)VMAP::VMapFactory::createOrGetVMapManager())->releaseModelInstance(name);
+}
 
 const char * GetPlainName(const char * FileName)
 {
@@ -25,12 +45,6 @@ void strToLower(char* str)
         *str=tolower(*str);
         ++str;
     }
-}
-
-ModelInstance_Overriden::~ModelInstance_Overriden()
-{
-    if (iModel)
-        ((VMAP::VMapManager2*)VMAP::VMapFactory::createOrGetVMapManager())->releaseModelInstance(name);
 }
 
 bool ModelInstance_Overriden::initialize(const GameObject & go, const GameObjectDisplayInfoEntry& info)
@@ -80,7 +94,14 @@ bool ModelInstance_Overriden::initialize(const GameObject & go, const GameObject
     return iModel != NULL;
 }
 
-ModelInstance_Overriden::ModelInstance_Overriden()
+ModelInstance_Overriden* ModelInstance_Overriden::construct(const class GameObject & go, const struct GameObjectDisplayInfoEntry& info)
 {
+    ModelInstance_Overriden* mdl = new ModelInstance_Overriden();
+    if (!mdl->initialize(go, info))
+    {
+        delete mdl;
+        return NULL;
+    }
 
+    return mdl;
 }

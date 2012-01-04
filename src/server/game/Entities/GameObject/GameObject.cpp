@@ -29,7 +29,8 @@
 #include "ScriptMgr.h"
 #include "CreatureAISelector.h"
 #include "Group.h"
-#include "GameobjKDTree.h"
+#include "GameObjectModel.h"
+#include "DynamicTree.h"
 
 struct GOextraData
 {
@@ -52,15 +53,8 @@ public:
         if (!info)
             return false;
 
-        ModelInstance_Overriden* mdl = new ModelInstance_Overriden();
-        if (!mdl->initialize(go, *info))
-        {
-            delete mdl;
-            return false;
-        }
-
-        model = mdl;
-        return true;
+        model = ModelInstance_Overriden::construct(go, *info);
+        return model != NULL;
     }
 
     bool collisionEnabled() const{ return model;}
@@ -165,7 +159,7 @@ void GameObject::AddToWorld()
 
         if (extra->initCollision(*this))
         {
-            ((KDTreeTest*)GetMap()->extraData[0])->insert(extra->model);
+            ((DynamicMapTree*)GetMap()->extraData[0])->insert(extra->model);
         }
         if (m_zoneScript)
             m_zoneScript->OnGameObjectCreate(this);
@@ -182,7 +176,7 @@ void GameObject::RemoveFromWorld()
     {
         if (extra->collisionEnabled())
         {
-            ((KDTreeTest*)GetMap()->extraData[0])->remove(extra->model);
+            ((DynamicMapTree*)GetMap()->extraData[0])->remove(extra->model);
         }
 
         if (m_zoneScript)

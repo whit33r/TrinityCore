@@ -43,7 +43,7 @@
 #include "SpellAuraEffects.h"
 
 #include "TemporarySummon.h"
-#include "gameobjkdtree.h"
+#include "DynamicMapTree.h"
 #include "Totem.h"
 #include "OutdoorPvPMgr.h"
 
@@ -1374,32 +1374,8 @@ bool WorldObject::IsWithinLOS(float ox, float oy, float oz) const
 
     if (IsInWorld())
     {
-        using namespace G3D;
-        struct AlwaysHit 
-        {
-            bool did_hit;
-            AlwaysHit() : did_hit(false) {}
-            bool operator()(const Ray& r, const KDtreeObject* obj, float& distance)
-            {
-                bool hit = obj->intersectRay(r, distance, true);
-                if (hit)
-                    did_hit = true;
-                return hit;
-            }
-        };
-
-        Vector3 v1(x,y,z+2.0f);
-        Vector3 v2(ox, oy, oz+2.0f);
-        float maxDist = (v2 - v1).magnitude();
-
-        if (fuzzyGt(maxDist, 0) )
-        {
-            Ray r = Ray::fromOriginAndDirection(v1, (v2-v1) / maxDist);
-            AlwaysHit callback;
-            KDTreeTest * tr = (KDTreeTest*)m_currMap->extraData[0];
-            tr->intersectRay(r, callback, maxDist);
-            dyn_los = !callback.did_hit;
-        }
+        DynamicMapTree & tr = *(DynamicMapTree*)m_currMap->extraData[0];
+        dyn_los = tr.isInLineOfSight(x, y, z+2.0f, ox, oy, oz+2.0f);
     }
     
     return static_los && dyn_los;

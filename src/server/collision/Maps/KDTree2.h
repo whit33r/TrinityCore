@@ -1,7 +1,36 @@
+/*
+ * Copyright (C) 2008-2011 TrinityCore <http://www.trinitycore.org/>
+ * Copyright (C) 2005-2010 MaNGOS <http://getmangos.com/>
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License as published by the
+ * Free Software Foundation; either version 2 of the License, or (at your
+ * option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along
+ * with this program. If not, see <http://www.gnu.org/licenses/>.
+ */
+
 #pragma once
 
-#include <G3D/KDTree.h>
-#include "ModelInstance.h"
+/**
+  @file KDTree.h
+
+  @maintainer Morgan McGuire, http://graphics.cs.williams.edu
+
+  @created 2004-01-11
+  @edited  2009-12-28
+
+  Copyright 2000-2009, Morgan McGuire.
+  All rights reserved.
+  */
+
+#include "g3d\kdtree.h"
 
 namespace G3D
 {
@@ -18,7 +47,7 @@ namespace G3D
     (which is much slower to create).
 
     Internally, objects
-    are arranged into a tree according to their 
+    are arranged into a tree according to their
     axis-aligned bounds.  This increases the cost of insertion to
     O(log n) but allows fast overlap queries.
 
@@ -39,9 +68,9 @@ namespace G3D
     <B>Moving %Set Members</B>
     <DT>It is important that objects do not move without updating the
     KDTree.  If the axis-aligned bounds of an object are about
-    to change, KDTree::remove it before they change and 
+    to change, KDTree::remove it before they change and
     KDTree::insert it again afterward.  For objects
-    where the hashCode and == operator are invariant with respect 
+    where the hashCode and == operator are invariant with respect
     to the 3D position,
     you can use the KDTree::update method as a shortcut to
     insert/remove an object in one step after it has moved.
@@ -64,17 +93,17 @@ namespace G3D
     that are always zero along one or more dimensions.
 
     */
-    template< class T, 
-    class BoundsFunc = BoundsTrait<T>, 
-    class HashFunc   = HashTrait<T>, 
-    class EqualsFunc = EqualsTrait<T> > 
+    template< class T,
+    class BoundsFunc = BoundsTrait<T>,
+    class HashFunc   = HashTrait<T>,
+    class EqualsFunc = EqualsTrait<T> >
     class KDTree2 {
     protected:
         #define TreeType KDTree2<T, BoundsFunc, HashFunc, EqualsFunc>
 
-        /** Wrapper for a value that includes a cache of its bounds. 
+        /** Wrapper for a value that includes a cache of its bounds.
         Except for the test value used in a set-query operation, there
-        is only ever one instance of the handle associated with any 
+        is only ever one instance of the handle associated with any
         value and the memberTable and Nodes maintain pointers to that
         heap-allocated value.
         */
@@ -110,7 +139,7 @@ namespace G3D
 
         /** Returns the bounds of the sub array. Used by makeNode. */
         static AABox computeBounds(
-            const Array<Handle*>& point, 
+            const Array<Handle*>& point,
             int                   beginIndex,
             int                   endIndex) {
 
@@ -121,7 +150,7 @@ namespace G3D
                 for (int p = beginIndex; p <= endIndex; ++p) {
                     // This code is written with the vector min and max expanded
                     // because otherwise it compiles incorrectly with -O3 on
-                    // gcc 3.4 
+                    // gcc 3.4
 
                     const Vector3& pLo = point[p]->bounds.low();
                     const Vector3& pHi = point[p]->bounds.high();
@@ -217,7 +246,7 @@ namespace G3D
             /** Location along the specified axis */
             float               splitLocation;
 
-            /** child[0] contains all values strictly 
+            /** child[0] contains all values strictly
             smaller than splitLocation along splitAxis.
 
             child[1] contains all values strictly
@@ -230,15 +259,15 @@ namespace G3D
 
             /** Array of values at this node (i.e., values
             straddling the split plane + all values if
-            this is a leaf node). 
+            this is a leaf node).
 
             This is an array of pointers because that minimizes
-            data movement during tree building, which accounts 
+            data movement during tree building, which accounts
             for about 15% of the time cost of tree building.
             */
             Array<Handle*>      valueArray;
 
-            /** For each object in the value array, a copy of its bounds. 
+            /** For each object in the value array, a copy of its bounds.
             Packing these into an array at the node level
             instead putting them in the valueArray improves
             cache coherence, which is about a 3x performance
@@ -262,7 +291,7 @@ namespace G3D
             Node(const Node& other) : valueArray(other.valueArray), boundsArray(other.boundsArray) {
                 splitAxis       = other.splitAxis;
                 splitLocation   = other.splitLocation;
-                splitBounds     = other.splitBounds;            
+                splitBounds     = other.splitBounds;
                 for (int i = 0; i < 2; ++i) {
                     child[i] = NULL;
                 }
@@ -310,8 +339,8 @@ namespace G3D
             }
 
             void verifyNode(const Vector3& lo, const Vector3& hi) {
-                //		debugPrintf("Verifying: split %d @ %f [%f, %f, %f], [%f, %f, %f]\n",
-                //			    splitAxis, splitLocation, lo.x, lo.y, lo.z, hi.x, hi.y, hi.z);
+                //        debugPrintf("Verifying: split %d @ %f [%f, %f, %f], [%f, %f, %f]\n",
+                //                splitAxis, splitLocation, lo.x, lo.y, lo.z, hi.x, hi.y, hi.z);
 
                 debugAssertM(lo == splitBounds.low(),
                     format("lo = %s, splitBounds.lo = %s",
@@ -351,7 +380,7 @@ namespace G3D
 
             /**
             Stores the locations of the splitting planes (the structure but not the content)
-            so that the tree can be quickly rebuilt from a previous configuration without 
+            so that the tree can be quickly rebuilt from a previous configuration without
             calling balance.
             */
             static void serializeStructure(const Node* n, BinaryOutput& bo) {
@@ -408,7 +437,7 @@ namespace G3D
             }
 
 
-            /** Appends all members that intersect the box. 
+            /** Appends all members that intersect the box.
             If useSphere is true, members that pass the box test
             face a second test against the sphere. */
             void getIntersectingMembers(
@@ -466,11 +495,11 @@ namespace G3D
                 // See if the ray will ever hit this node or its children
                 Vector3 location;
                 bool alreadyInsideBounds = false;
-                bool rayWillHitBounds = 
+                bool rayWillHitBounds =
                     CollisionDetection::collisionLocationForMovingPointFixedAABox(
                     ray.origin(), ray.direction(), splitBounds, location, alreadyInsideBounds);
 
-                bool canHitThisNode = (alreadyInsideBounds ||                
+                bool canHitThisNode = (alreadyInsideBounds ||
                     (rayWillHitBounds && ((location - ray.origin()).squaredLength() < square(distance))));
 
                 return canHitThisNode;
@@ -478,8 +507,8 @@ namespace G3D
 
             template<typename RayCallback>
             void intersectRay(
-                const Ray& ray, 
-                RayCallback& intersectCallback, 
+                const Ray& ray,
+                RayCallback& intersectCallback,
                 float& distance,
                 bool stopAtFirstHit,
                 bool intersectCallbackIsFast) const {
@@ -488,9 +517,10 @@ namespace G3D
                         // The ray doesn't hit this node, so it can't hit the children of the node.
                         return;
                     }
+                    float enterDistance = distance;
 
                     // Test for intersection against every object at this node.
-                    for (int v = 0; v < valueArray.size(); ++v) {        
+                    for (int v = 0; v < valueArray.size(); ++v) {
                         bool canHitThisObject = true;
 
                         if (! intersectCallbackIsFast) {
@@ -498,11 +528,11 @@ namespace G3D
                             Vector3 location;
                             const AABox& bounds = boundsArray[v];
                             bool alreadyInsideBounds = false;
-                            bool rayWillHitBounds = 
+                            bool rayWillHitBounds =
                                 CollisionDetection::collisionLocationForMovingPointFixedAABox(
                                 ray.origin(), ray.direction(), bounds, location, alreadyInsideBounds);
 
-                            canHitThisObject = (alreadyInsideBounds ||                
+                            canHitThisObject = (alreadyInsideBounds ||
                                 (rayWillHitBounds && ((location - ray.origin()).squaredLength() < square(distance))));
                         }
 
@@ -514,10 +544,13 @@ namespace G3D
                             if (intersectCallback(ray, value, distance) && stopAtFirstHit)
                                 return;
                         }
+
+                        if(stopAtFirstHit && distance < enterDistance)
+                            return;
                     }
 
                     // There are three cases to consider next:
-                    // 
+                    //
                     //  1. the ray can start on one side of the splitting plane and never enter the other,
                     //  2. the ray can start on one side and enter the other, and
                     //  3. the ray can travel exactly down the splitting plane
@@ -561,7 +594,7 @@ namespace G3D
                     }
 
                     if (ray.direction()[splitAxis] != 0) {
-                        // See if there was an intersection before hitting the splitting plane.  
+                        // See if there was an intersection before hitting the splitting plane.
                         // If so, there is no need to look on the far side and recursion terminates.
                         float distanceToSplittingPlane = (splitLocation - ray.origin()[splitAxis]) / ray.direction()[splitAxis];
                         if (distanceToSplittingPlane > distance) {
@@ -589,8 +622,8 @@ namespace G3D
         Call assignSplitBounds() on the root node after making a tree.
         */
         Node* makeNode(
-            Array<Handle*>& source, 
-            int valuesPerNode, 
+            Array<Handle*>& source,
+            int valuesPerNode,
             int numMeanSplits,
             Array<Handle*>& temp)  {
 
@@ -647,13 +680,13 @@ namespace G3D
                                 // is swapped in in its place.
                                 gt.fastRemove(i); --i;
                             }
-                        }            
+                        }
 
                         if ((node->valueArray.size() > (source.size() / 2)) &&
                             (source.size() > 6)) {
-                                // This was a bad partition; we ended up putting the splitting plane right in the middle of most of the 
-                                // objects.  We could try to split on a different axis, or use a different partition (e.g., the extents mean, 
-                                // or geometric mean).  This implementation falls back on the extents mean, since that case is already handled 
+                                // This was a bad partition; we ended up putting the splitting plane right in the middle of most of the
+                                // objects.  We could try to split on a different axis, or use a different partition (e.g., the extents mean,
+                                // or geometric mean).  This implementation falls back on the extents mean, since that case is already handled
                                 // below.
                                 numMeanSplits = 1;
                         }
@@ -664,8 +697,8 @@ namespace G3D
 
                     if (numMeanSplits > 0) {
                         // Split along the mean
-                        splitLocation = 
-                            bounds.high()[splitAxis] * 0.5f + 
+                        splitLocation =
+                            bounds.high()[splitAxis] * 0.5f +
                             bounds.low()[splitAxis] * 0.5f;
 
                         debugAssertM(isFinite(splitLocation),
@@ -680,7 +713,7 @@ namespace G3D
 #           if defined(G3D_DEBUG) && defined(VERIFY_TREE)
                     debugAssert(lt.size() + node->valueArray.size() + gt.size() == source.size());
                     // Verify that all objects ended up on the correct side of the split.
-                    // (i.e., make sure that the Array partition was correct) 
+                    // (i.e., make sure that the Array partition was correct)
                     for (int i = 0; i < lt.size(); ++i) {
                         const AABox& bounds  = lt[i]->bounds;
                         debugAssert(bounds.high()[splitAxis] < splitLocation);
@@ -712,7 +745,7 @@ namespace G3D
                         memberTable.set(Member(v), node);
                     }
 
-                    if (lt.size() > 0) {		    
+                    if (lt.size() > 0) {
                         node->child[0] = makeNode(lt, valuesPerNode, numMeanSplits - 1, temp);
                     }
 
@@ -885,7 +918,7 @@ namespace G3D
         /**
         Removes an object from the set in O(1) time.
         It is an error to remove members that are not already
-        present.  May unbalance the tree.  
+        present.  May unbalance the tree.
 
         Removing an element never causes a node (split plane) to be removed...
         nodes are only changed when the tree is rebalanced.  This behavior
@@ -938,7 +971,7 @@ namespace G3D
         on <I>T</I> are independent of the bounds.  In
         that case, you may call update(v) to insert an
         element for the first time and call update(v)
-        again every time it moves to keep the tree 
+        again every time it moves to keep the tree
         up to date.
         */
         void update(const T& value) {
@@ -958,11 +991,11 @@ namespace G3D
         @param valuesPerNode Maximum number of elements to put at
         a node.
 
-        @param numMeanSplits numMeanSplits = 0 gives a 
+        @param numMeanSplits numMeanSplits = 0 gives a
         fully axis aligned BSP-tree, where the balance operation attempts to balance
         the tree so that every splitting plane has an equal number of left
-        and right children (i.e. it is a <B>median</B> split along that axis).  
-        This tends to maximize average performance.  
+        and right children (i.e. it is a <B>median</B> split along that axis).
+        This tends to maximize average performance.
 
         You can override this behavior by
         setting a number of <B>mean</B> (average) splits.  numMeanSplits = MAX_INT
@@ -989,7 +1022,7 @@ namespace G3D
             }
 
             Array<Handle*> temp;
-            // Make a new root.  Work with a copy of the value array because 
+            // Make a new root.  Work with a copy of the value array because
             // makeNode clears the source array as it progresses
             Array<Handle*> copy(oldRoot->valueArray);
             root = makeNode(copy, valuesPerNode, numMeanSplits, temp);
@@ -1070,7 +1103,7 @@ namespace G3D
     public:
 
         /**
-        Returns all members inside the set of planes.  
+        Returns all members inside the set of planes.
         @param members The results are appended to this array.
         */
         void getIntersectingMembers(const Array<Plane>& plane, Array<T*>& members) const {
@@ -1151,14 +1184,14 @@ namespace G3D
             // caller uses post increment (which they shouldn't!).
             Array<Node*>    stack;
 
-            /** The next index of current->valueArray to return. 
+            /** The next index of current->valueArray to return.
             Undefined when isEnd is true.*/
             int             nextValueArrayIndex;
 
             BoxIntersectionIterator() : isEnd(true) {}
 
-            BoxIntersectionIterator(const AABox& b, const Node* root) : 
-            isEnd(root == NULL), box(b), 
+            BoxIntersectionIterator(const AABox& b, const Node* root) :
+            isEnd(root == NULL), box(b),
                 node(const_cast<Node*>(root)), nextValueArrayIndex(-1) {
 
                     // We intentionally start at the "-1" index of the current
@@ -1181,10 +1214,10 @@ namespace G3D
                 } else if (other.isEnd) {
                     return false;
                 } else {
-                    // Two non-end iterators; see if they match.  This is kind of 
+                    // Two non-end iterators; see if they match.  This is kind of
                     // silly; users shouldn't call == on iterators in general unless
                     // one of them is the end iterator.
-                    if ((box != other.box) || (node != other.node) || 
+                    if ((box != other.box) || (node != other.node) ||
                         (nextValueArrayIndex != other.nextValueArrayIndex) ||
                         (stack.length() != other.stack.length())) {
                             return false;
@@ -1213,7 +1246,7 @@ namespace G3D
 
                     // Search for the next node if we've exhausted this one
                     while ((! isEnd) &&  (nextValueArrayIndex >= node->valueArray.length())) {
-                        // If we entered this loop, then the iterator has exhausted the elements at 
+                        // If we entered this loop, then the iterator has exhausted the elements at
                         // node (possibly because it just switched to a child node with no members).
                         // This loop continues until it finds a node with members or reaches
                         // the end of the whole intersection search.
@@ -1233,7 +1266,7 @@ namespace G3D
                         }
 
                         if (stack.length() > 0) {
-                            // Go on to the next node (which may be either one of the ones we 
+                            // Go on to the next node (which may be either one of the ones we
                             // just pushed, or one from farther back the tree).
                             node = stack.pop();
                             nextValueArrayIndex = 0;
@@ -1249,7 +1282,7 @@ namespace G3D
                             foundIntersection = true;
                         } else {
                             ++nextValueArrayIndex;
-                            // If we exhaust this node, we'll loop around the master loop 
+                            // If we exhaust this node, we'll loop around the master loop
                             // to find a new node.
                         }
                     }
@@ -1386,8 +1419,8 @@ namespace G3D
         */
         template<typename RayCallback>
         void intersectRay(
-            const Ray& ray, 
-            RayCallback& intersectCallback, 
+            const Ray& ray,
+            RayCallback& intersectCallback,
             float& distance,
             bool stopAtFirstHit = true,
             bool intersectCallbackIsFast = false
@@ -1423,7 +1456,7 @@ namespace G3D
 
         /**
         Stores the locations of the splitting planes (the structure but not the content)
-        so that the tree can be quickly rebuilt from a previous configuration without 
+        so that the tree can be quickly rebuilt from a previous configuration without
         calling balance.
         */
         void serializeStructure(BinaryOutput& bo) const {
@@ -1448,7 +1481,7 @@ namespace G3D
         }
 
 
-        /** If a value that is EqualsFunc to @a value is present, returns a pointer to the 
+        /** If a value that is EqualsFunc to @a value is present, returns a pointer to the
         version stored in the data structure, otherwise returns NULL.
         */
         const T* getPointer(const T& value) const {
@@ -1523,9 +1556,9 @@ namespace G3D
 
 
         /**
-        C++ STL style iterator method.  Returns the first member.  
+        C++ STL style iterator method.  Returns the first member.
         Use preincrement (++entry) to get to the next element (iteration
-        order is arbitrary).  
+        order is arbitrary).
         Do not modify the set while iterating.
         */
         Iterator begin() const {
@@ -1544,33 +1577,7 @@ namespace G3D
     };
 }
 
-using G3D::Vector3;
-class ModelInstance_Overriden : public VMAP::ModelInstance
-{
-public:
-    ModelInstance_Overriden();
 
-    ~ModelInstance_Overriden();
 
-    const Vector3& getPosition() const { return iPos;}
 
-    bool initialize(const class GameObject & go, const struct GameObjectDisplayInfoEntry& info);
-};
 
-typedef ModelInstance_Overriden KDtreeObject;
-typedef G3D::KDTree2<KDtreeObject*> KDTreeTest;
-
-template<> struct HashTrait<KDtreeObject*>
-{
-    static size_t hashCode(const KDtreeObject* g) { return (size_t)(void*)g; }
-};
-
-template<> struct BoundsTrait<KDtreeObject*>
-{
-    static void getBounds(const KDtreeObject* g, G3D::AABox& out)
-    {
-        Vector3 center(g->GetPositionX(),g->GetPositionY(), g->GetPositionZ());
-        // abstract 4x4x4 box
-        out = G3D::AABox(center-4*Vector3::one(), center+4*Vector3::one());
-    }
-};
