@@ -418,6 +418,8 @@ bool processArgv(int argc, char ** argv, const char *versionString)
     return result;
 }
 
+extern void ExtractGameobjectModels();
+
 //xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 // Main
 //
@@ -508,6 +510,8 @@ int main(int argc, char ** argv)
         ParsMapFiles();
         delete [] map_ids;
         //nError = ERROR_SUCCESS;
+        // Extract models, listed in DameObjectDisplayInfo.dbc
+        ExtractGameobjectModels();
     }
 
     clreol();
