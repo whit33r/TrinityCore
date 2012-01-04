@@ -75,9 +75,9 @@ void ExtractGameobjectModels()
             path = basepath + name;
             mdl.ConvertToVMAPModel(path.c_str());
 
-            uint32 path_length = path.length();
+            uint32 path_length = strlen(name);
             fwrite(&path_length, sizeof(uint32), 1, model_list);
-            fwrite(path.c_str(), sizeof(char), path_length, model_list);
+            fwrite(name, sizeof(char), path_length, model_list);
         }
     }
 

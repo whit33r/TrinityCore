@@ -179,7 +179,7 @@ namespace VMAP
         }
 
         // add an object models, listed in temp_gameobject_models file
-        if (FILE * model_list = fopen((iSrcDir + "temp_gameobject_models").c_str(), "rb"))
+        if (FILE * model_list = fopen((iSrcDir + "/temp_gameobject_models").c_str(), "rb"))
         {
             uint32 name_length;
             char buff[500];
