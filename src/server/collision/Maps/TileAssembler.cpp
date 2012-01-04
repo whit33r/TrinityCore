@@ -178,6 +178,21 @@ namespace VMAP
             // break; //test, extract only first map; TODO: remvoe this line
         }
 
+        // add an object models, listed in temp_gameobject_models file
+        if (FILE * model_list = fopen((iSrcDir + "temp_gameobject_models").c_str(), "rb"))
+        {
+            uint32 name_length;
+            char buff[500];
+            while (!feof(model_list))
+            {
+                fread(&name_length,sizeof(uint32),1,model_list);
+                fread(&buff,sizeof(char),name_length,model_list);
+
+                spawnedModelFiles.insert(std::string(buff, name_length));
+            }
+            fclose(model_list);
+        }
+
         // export objects
         std::cout << "\nConverting Model Files" << std::endl;
         for (std::set<std::string>::iterator mfile = spawnedModelFiles.begin(); mfile != spawnedModelFiles.end(); ++mfile)
