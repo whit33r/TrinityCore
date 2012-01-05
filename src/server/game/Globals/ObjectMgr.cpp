@@ -4353,6 +4353,34 @@ void ObjectMgr::LoadQuests()
     sLog->outString();
 }
 
+void ObjectMgr::LoadLocales()
+{
+    uint32 oldMSTime = getMSTime();
+
+    // Clear all locales first here
+    /// Write code here.
+
+    QueryResult result = WorldDatabase.Query("SELECT entry, type, language, text FROM locales");
+
+    if (!result)
+    {
+        sLog->outString(">> Loaded 0 locales definitions");
+        sLog->outString();
+    }
+
+    do 
+    {
+        Field* fields = result->Fetch();
+
+        uint32 entry = fields[0].GetUInt32();
+
+
+        // Load Locales here.
+
+    } while (result->NextRow());
+    
+}
+
 void ObjectMgr::LoadQuestLocales()
 {
     uint32 oldMSTime = getMSTime();
