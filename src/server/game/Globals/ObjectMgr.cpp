@@ -4373,7 +4373,9 @@ void ObjectMgr::LoadLocales()
         Field* fields = result->Fetch();
 
         uint32 entry = fields[0].GetUInt32();
-
+        uint8 type = fields[1].GetUInt8();
+        std::string language = fields[2].GetString();
+        std::string text = fields[3].GetString();
 
         // Load Locales here.
 
